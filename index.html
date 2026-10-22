@@ -1745,7 +1745,7 @@
                 lucide.createIcons();
             }
 
-            /* --- OCR STATEMENT & TNG "TRANSFER TO WALLET" PARSER --- */
+            /* --- OCR STATEMENT & TNG / RHB PARSER --- */
             async handleFileUpload(event) {
                 const files = event.target.files;
                 if (!files || files.length === 0) return;
@@ -1878,22 +1878,23 @@
 
             parseStatementTextToTransactions(text) {
                 const results = [];
+                const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
                 let currentDate = new Date().toISOString().split('T')[0];
 
-                const dateMatch = text.match(/(\d{1,2}[\/\.-]\d{1,2}[\/\.-]\d{2,4})/);
-                if (dateMatch) {
-                    const parts = dateMatch[1].split(/[\/\.-]/);
-                    if (parts.length === 3) {
-                        const year = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
-                        const month = parts[1].padStart(2, '0');
-                        const day = parts[0].padStart(2, '0');
-                        currentDate = `${year}-${month}-${day}`;
-                    }
-                }
-
+                // 1. TNG "Transfer to wallet" screenshot check
                 if (/transfer\s*to\s*wallet/i.test(text)) {
                     const amountMatch = text.match(/(?:-\s*RM|\bRM\b)\s*([\d\.,]+)/i);
                     const amount = amountMatch ? parseFloat(amountMatch[1].replace(',', '')) : 0.00;
+                    const dateMatch = text.match(/(\d{1,2}[\/\.-]\d{1,2}[\/\.-]\d{2,4})/);
+                    if (dateMatch) {
+                        const parts = dateMatch[1].split(/[\/\.-]/);
+                        if (parts.length === 3) {
+                            const year = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
+                            const month = parts[1].padStart(2, '0');
+                            const day = parts[0].padStart(2, '0');
+                            currentDate = `${year}-${month}-${day}`;
+                        }
+                    }
                     
                     if (amount > 0) {
                         results.push({
@@ -1907,38 +1908,75 @@
                     }
                 }
 
-                const vendorMatch = text.match(/\b(?:Merchant|Receiver|To)\b\s*:?\s*([A-Za-z0-9\s\-\.\'\&]+)/i);
-                const amountMatch = text.match(/(?:-\s*RM|\bRM\b)\s*([\d\.,]+)/i);
-
-                if (vendorMatch && amountMatch) {
-                    let vendor = vendorMatch[1].trim().split('\n')[0];
-                    const amount = parseFloat(amountMatch[1].replace(',', ''));
-                    if (vendor.length > 1 && !isNaN(amount) && amount > 0) {
-                        results.push({
-                            vendor: vendor,
-                            amount: amount,
-                            date: currentDate,
-                            category: this.autoCategorize(vendor),
-                            reference: ''
-                        });
-                        return results;
+                // 2. RHB & General Multi-row Bank Statement Parser
+                lines.forEach(line => {
+                    const headerDate = line.match(/(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)?,?\s*(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})/i);
+                    if (headerDate) {
+                        const day = headerDate[1].padStart(2, '0');
+                        const monthMap = { january:'01', february:'02', march:'03', april:'04', may:'05', june:'06', july:'07', august:'08', september:'09', october:'10', november:'11', december:'12' };
+                        const month = monthMap[headerDate[2].toLowerCase()];
+                        const year = headerDate[3];
+                        currentDate = `${year}-${month}-${day}`;
+                        return;
                     }
-                }
 
-                results.push({
-                    vendor: 'Scanned Expense',
-                    amount: 0.00,
-                    date: currentDate,
-                    category: 'General',
-                    reference: ''
+                    const debitMatch = line.match(/(.*?)(?:-\s*MYR|-\s*RM|\bMYR\b|\bRM\b)\s*([\d\.,]+)/i);
+                    if (debitMatch) {
+                        let rawVendor = debitMatch[1].trim();
+                        rawVendor = rawVendor
+                            .replace(/^\d{6}\s*/, '')
+                            .replace(/Debit\s*Card\s*Transaction/i, '')
+                            .replace(/Online\s*Transfer/i, '')
+                            .replace(/Successful/i, '')
+                            .trim();
+
+                        const amount = parseFloat(debitMatch[2].replace(',', ''));
+                        if (rawVendor.length > 1 && !isNaN(amount) && amount > 0) {
+                            results.push({
+                                vendor: rawVendor,
+                                amount: amount,
+                                date: currentDate,
+                                category: this.autoCategorize(rawVendor),
+                                reference: ''
+                            });
+                        }
+                    }
                 });
+
+                if (results.length === 0) {
+                    const vendorMatch = text.match(/\b(?:Merchant|Receiver|To)\b\s*:?\s*([A-Za-z0-9\s\-\.\'\&]+)/i);
+                    const amountMatch = text.match(/(?:-\s*RM|\bRM\b)\s*([\d\.,]+)/i);
+
+                    if (vendorMatch && amountMatch) {
+                        let vendor = vendorMatch[1].trim().split('\n')[0];
+                        const amount = parseFloat(amountMatch[1].replace(',', ''));
+                        if (vendor.length > 1 && !isNaN(amount) && amount > 0) {
+                            results.push({
+                                vendor: vendor,
+                                amount: amount,
+                                date: currentDate,
+                                category: this.autoCategorize(vendor),
+                                reference: ''
+                            });
+                            return results;
+                        }
+                    }
+
+                    results.push({
+                        vendor: 'Scanned Expense',
+                        amount: 0.00,
+                        date: currentDate,
+                        category: 'General',
+                        reference: ''
+                    });
+                }
 
                 return results;
             }
 
             autoCategorize(vendor) {
                 const v = vendor.toLowerCase();
-                if (v.includes('restaurant') || v.includes('food') || v.includes('cafe') || v.includes('grocer') || v.includes('mcdonald')) return 'Food & Dining';
+                if (v.includes('restaurant') || v.includes('food') || v.includes('cafe') || v.includes('grocer') || v.includes('mcdonald') || v.includes('restoran')) return 'Food & Dining';
                 if (v.includes('guardian') || v.includes('pharmacy') || v.includes('clinic') || v.includes('watson')) return 'Health & Beauty';
                 if (v.includes('petronas') || v.includes('shell') || v.includes('grab') || v.includes('parking')) return 'Transportation';
                 if (v.includes('aeon') || v.includes('shopee') || v.includes('lotus')) return 'Shopping';
@@ -2180,20 +2218,6 @@
                 this.transactions = [];
                 this.saveData();
                 this.closeClearDataModal();
-            }
-
-            initPWA() {
-                window.addEventListener('beforeinstallprompt', (e) => {
-                    e.preventDefault();
-                    this.deferredPrompt = e;
-                    const installBtn = document.getElementById('install-btn');
-                    if (installBtn) {
-                        installBtn.classList.remove('hidden');
-                        installBtn.addEventListener('click', () => {
-                            this.deferredPrompt.prompt();
-                        });
-                    }
-                });
             }
         }
 
