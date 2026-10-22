@@ -577,8 +577,9 @@
                 this.tempFirstPin = null;
                 
                 this.hideAmounts = localStorage.getItem('app_hide_amounts') === 'true';
+                
+                // Initialize categories from local storage or defaults
                 this.categories = JSON.parse(localStorage.getItem('app_categories')) || DEFAULT_CATEGORIES;
-
                 this.transactions = JSON.parse(localStorage.getItem('app_transactions')) || [];
 
                 this.pendingScanResults = [];
@@ -601,14 +602,10 @@
                     }
                     this.db = firebase.firestore();
 
-                    // 1. Real-time listener: instant cross-device updates & deletions using timestamp reconciliation
+                    // 1. Real-time listener for Expenses
                     this.db.collection('expenses').onSnapshot((snapshot) => {
                         const cloudMap = new Map();
-                        
-                        // Load current local transactions into map
                         this.transactions.forEach(t => cloudMap.set(String(t.id), t));
-
-                        // Track active cloud document IDs to detect deletions from other devices
                         const activeCloudIds = new Set();
 
                         snapshot.forEach((doc) => {
@@ -621,7 +618,6 @@
                             }
                         });
 
-                        // Remove items that were deleted from Firestore by another device
                         for (let [id] of cloudMap) {
                             if (!activeCloudIds.has(String(id))) {
                                 cloudMap.delete(id);
@@ -633,11 +629,32 @@
                         this.updateCloudBadge(true);
                         this.render();
                     }, (err) => {
-                        console.error("Firestore sync listener error:", err);
+                        console.error("Firestore expense sync error:", err);
                         this.updateCloudBadge(false);
                     });
 
-                    // 2. Periodic 1-Hour Background Refresh Timer (Every 60 mins)
+                    // 2. Real-time listener for Categories & Subcategories
+                    this.db.collection('settings').doc('categories').onSnapshot((doc) => {
+                        if (doc.exists && doc.data().data) {
+                            try {
+                                const cloudCategories = JSON.parse(doc.data().data);
+                                if (cloudCategories && typeof cloudCategories === 'object') {
+                                    this.categories = cloudCategories;
+                                    localStorage.setItem('app_categories', JSON.stringify(this.categories));
+                                    this.render();
+                                }
+                            } catch (e) {
+                                console.error("Error parsing cloud categories:", e);
+                            }
+                        } else {
+                            // If not in cloud yet, push initial categories to cloud
+                            this.saveCategoriesToCloud();
+                        }
+                    }, (err) => {
+                        console.error("Firestore category sync error:", err);
+                    });
+
+                    // 3. Periodic 1-Hour Background Refresh Timer
                     setInterval(() => {
                         this.refreshCloudData();
                     }, 60 * 60 * 1000);
@@ -1047,6 +1064,17 @@
 
             saveCategories() {
                 localStorage.setItem('app_categories', JSON.stringify(this.categories));
+                this.saveCategoriesToCloud();
+            }
+
+            saveCategoriesToCloud() {
+                if (!this.db) return;
+                this.db.collection('settings').doc('categories').set({
+                    data: JSON.stringify(this.categories),
+                    updatedAt: Date.now()
+                }).catch(err => {
+                    console.error("Error saving categories to cloud:", err);
+                });
             }
 
             /* --- CALCULATIONS & DASHBOARD RENDER --- */
@@ -1944,9 +1972,7 @@
             }
 
             exportToCsv() {
-                if (!this.transactions || this.transactions.length === 0) {
-                    return;
-                }
+                if (!this.transactions || this.transactions.length === 0) return;
 
                 const headers = ["Date", "Type", "Merchant / Vendor", "Category", "Subcategory", "Amount (MYR)"];
                 
@@ -2049,7 +2075,7 @@
                 return result;
             }
 
-      /* --- CLEAR ALL DATA WITH CLOUD SYNC DELETION --- */
+            /* --- CLEAR ALL DATA WITH CLOUD SYNC DELETION --- */
             openClearDataModal() {
                 document.getElementById('clear-data-modal').classList.remove('hidden');
             }
