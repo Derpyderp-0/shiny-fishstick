@@ -497,7 +497,7 @@
         </div>
 
         <!-- Hidden Global Input Trigger for OCR from FAB -->
-        <input type="file" id="fab-file-input" accept="image/*,application/pdf" multiple class="hidden" onchange="window.app.handleFileUpload(event)">
+        <input type="file" id="fab-file-input" accept="image/*,application/pdf" class="hidden" onchange="window.app.handleFileUpload(event)">
 
         <!-- MOBILE BOTTOM NAVIGATION BAR -->
         <nav class="sm:hidden bg-white border-t border-slate-200 flex justify-around p-2 text-slate-400 font-medium text-xs relative z-20">
@@ -700,7 +700,7 @@
                 this.auth = null;
                 this.currentUser = null;
 
-                this.initPWA();
+                this.initChart();
                 this.initFirebase();
             }
 
@@ -1313,10 +1313,10 @@
                 Object.keys(this.categories).forEach(c => totals[c] = 0);
                 this.transactions.forEach(t => {
                     if (t.type !== 'income') {
-                        if (totals[t.category] !== undefined) totals[t.category] += t.amount;
+                        if (totals[t.category] !== undefined) totals[t.category] += (parseFloat(t.amount) || 0);
                         else {
                             if (!totals['General']) totals['General'] = 0;
-                            totals['General'] += t.amount;
+                            totals['General'] += (parseFloat(t.amount) || 0);
                         }
                     }
                 });
@@ -1461,7 +1461,12 @@
             }
 
             initChart() {
-                const ctx = document.getElementById('categoryChart').getContext('2d');
+                const canvas = document.getElementById('categoryChart');
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                if (this.chartInstance) {
+                    this.chartInstance.destroy();
+                }
                 this.chartInstance = new Chart(ctx, {
                     type: 'doughnut',
                     data: {
@@ -1485,7 +1490,10 @@
             }
 
             updateChart() {
-                if (!this.chartInstance) return;
+                if (!this.chartInstance) {
+                    this.initChart();
+                    if (!this.chartInstance) return;
+                }
                 const totals = this.calculateCategoryTotals();
                 const labels = [];
                 const data = [];
@@ -1493,10 +1501,11 @@
 
                 Object.keys(this.categories).forEach(cat => {
                     if (cat === 'Income & Salary') return;
-                    if (totals[cat] > 0) {
+                    const val = totals[cat] || 0;
+                    if (val > 0) {
                         labels.push(cat);
-                        data.push(totals[cat]);
-                        colors.push(this.categories[cat].color);
+                        data.push(val);
+                        colors.push(this.categories[cat].color || '#6366f1');
                     }
                 });
 
@@ -1691,6 +1700,11 @@
                     dateItems.forEach(item => {
                         const isIncome = item.type === 'income';
                         const catInfo = this.categories[item.category] || { color: '#64748b', icon: 'grid' };
+                        
+                        const thirtyMinutesAgo = Date.now() - (30 * 60 * 1000);
+                        const isRecent = item.updatedAt && item.updatedAt > thirtyMinutesAgo;
+                        const recentBadgeHtml = isRecent ? `<span class="bg-indigo-100 text-indigo-700 text-[9px] font-extrabold px-2 py-0.5 rounded-full border border-indigo-200 animate-pulse">Recent</span>` : '';
+
                         const card = document.createElement('div');
                         card.className = "bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center";
                         const subText = item.subcategory ? ` (${item.subcategory})` : '';
@@ -1702,7 +1716,10 @@
                                     <i data-lucide="${catInfo.icon || 'folder'}" class="w-5 h-5"></i>
                                 </div>
                                 <div>
-                                    <p class="text-sm font-semibold text-slate-800 leading-tight">${item.vendor}</p>
+                                    <div class="flex items-center gap-2">
+                                        <p class="text-sm font-semibold text-slate-800 leading-tight">${item.vendor}</p>
+                                        ${recentBadgeHtml}
+                                    </div>
                                     <p class="text-xs text-slate-400 mt-0.5"><span class="font-medium text-slate-600">${item.category}${subText}</span></p>
                                     ${refText}
                                 </div>
@@ -1874,7 +1891,6 @@
                     }
                 }
 
-                // Strictly recognize "Transfer to wallet" phrase in TNG uploads
                 if (/transfer\s*to\s*wallet/i.test(text)) {
                     const amountMatch = text.match(/(?:-\s*RM|\bRM\b)\s*([\d\.,]+)/i);
                     const amount = amountMatch ? parseFloat(amountMatch[1].replace(',', '')) : 0.00;
@@ -1891,7 +1907,6 @@
                     }
                 }
 
-                // General Fallback merchant parser
                 const vendorMatch = text.match(/\b(?:Merchant|Receiver|To)\b\s*:?\s*([A-Za-z0-9\s\-\.\'\&]+)/i);
                 const amountMatch = text.match(/(?:-\s*RM|\bRM\b)\s*([\d\.,]+)/i);
 
@@ -1924,7 +1939,7 @@
             autoCategorize(vendor) {
                 const v = vendor.toLowerCase();
                 if (v.includes('restaurant') || v.includes('food') || v.includes('cafe') || v.includes('grocer') || v.includes('mcdonald')) return 'Food & Dining';
-                if (v.includes('guardian') || v.includes('pharmacy') || v.includes('clinic')) return 'Health & Beauty';
+                if (v.includes('guardian') || v.includes('pharmacy') || v.includes('clinic') || v.includes('watson')) return 'Health & Beauty';
                 if (v.includes('petronas') || v.includes('shell') || v.includes('grab') || v.includes('parking')) return 'Transportation';
                 if (v.includes('aeon') || v.includes('shopee') || v.includes('lotus')) return 'Shopping';
                 if (v.includes('tnb') || v.includes('water') || v.includes('unifi') || v.includes('transfer to wallet')) return 'Utilities & Services';
@@ -2075,7 +2090,7 @@
                             const line = lines[i];
                             if (line.includes("TRANSACTIONS LEDGER")) {
                                 isTransactionSection = true;
-                                i++; // skip header line
+                                i++;
                                 continue;
                             }
                             if (isTransactionSection) {
