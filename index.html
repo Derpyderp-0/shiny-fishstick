@@ -1008,7 +1008,6 @@
             }
 
             openResetPinModal() {
-                document.getElementById('reset-pin-modal').classList.add('hidden');
                 document.getElementById('reset-pin-modal').classList.remove('hidden');
             }
 
@@ -1868,7 +1867,7 @@
                 const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
                 let currentDate = new Date().toISOString().split('T')[0];
 
-                /* 1. Touch 'n Go (TNG) eWallet screenshots */
+                /* 1. Touch 'n Go (TNG) / Receiver eWallet screenshots */
                 const tngVendorMatch = text.match(/\b(?:Merchant|Receiver)\b\s*:?\s*([A-Za-z0-9\s\-\.\'\&]+)/i);
                 const tngAmountMatch = text.match(/(?:-\s*RM|\bRM\b)\s*([\d\.,]+)/i);
 
@@ -2144,7 +2143,7 @@
                 this.switchView('dashboard');
             }
 
-            /* --- DATA PERSISTENCE & EXPORT / IMPORT --- */
+            /* --- DATA PERSISTENCE & EXPORT / IMPORT (WITH CATEGORY ALLOCATION) --- */
             exportToCsv() {
                 if (!this.transactions || this.transactions.length === 0) return;
 
@@ -2186,6 +2185,7 @@
 
                         const uid = this.currentUser.uid;
                         const updatedAt = Date.now();
+                        let categoriesUpdated = false;
 
                         for (let i = 1; i < lines.length; i++) {
                             const row = this.parseCsvRow(lines[i]);
@@ -2197,6 +2197,16 @@
                                 const subcategory = row[4].trim();
                                 const amount = parseFloat(row[5]) || 0;
 
+                                // Auto-allocate / register category & subcategory if user CSV contains new tags
+                                if (!this.categories[category]) {
+                                    this.categories[category] = { color: '#6366f1', icon: 'folder', subcategories: [] };
+                                    categoriesUpdated = true;
+                                }
+                                if (subcategory && !this.categories[category].subcategories.includes(subcategory)) {
+                                    this.categories[category].subcategories.push(subcategory);
+                                    categoriesUpdated = true;
+                                }
+
                                 if (vendor && !isNaN(amount) && amount > 0) {
                                     const id = Date.now().toString() + Math.random().toString(36).substr(2, 4);
                                     const txnObj = { id, date: date || new Date().toISOString().split('T')[0], type, vendor, category, subcategory, amount, updatedAt };
@@ -2205,6 +2215,11 @@
                                 }
                             }
                         }
+
+                        if (categoriesUpdated) {
+                            this.saveCategoriesToCloud();
+                        }
+
                         this.switchView('dashboard');
                     } catch (err) {
                         console.error("Error parsing CSV import:", err);
