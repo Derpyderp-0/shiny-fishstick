@@ -6,7 +6,7 @@
     <title>Smart Expense Tracker PWA</title>
     <!-- PWA Manifest & Theme Color -->
     <meta name="theme-color" content="#4f46e5">
-    <meta name="description" content="Offline-first Smart Expense Tracker PWA with Receipt Scanning & Bank Statement Parser OCR">
+    <meta name="description" content="Secure Multi-User Expense Tracker PWA with Real-Time Cloud Sync & OCR">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2845/2845722.png">
     
     <!-- Tailwind CSS -->
@@ -37,19 +37,54 @@
         }
     </script>
 
-    <!-- Firebase SDK (Compat Version) for Real-time Cloud Sync -->
+    <!-- Firebase SDK (Compat Version) for Auth, Firestore, & Real-time Cloud Sync -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
 <body class="h-full text-slate-800 antialiased font-sans select-none">
 
-    <!-- PIN SECURITY OVERLAY -->
+    <!-- LOGIN / AUTH SCREEN -->
+    <div id="auth-screen" class="fixed inset-0 bg-indigo-900 text-white z-50 flex flex-col items-center justify-center p-6 hidden">
+        <div class="w-full max-w-sm space-y-6">
+            <div class="text-center space-y-2">
+                <div class="w-16 h-16 bg-white/10 rounded-3xl flex items-center justify-center mx-auto mb-3 backdrop-blur-md border border-white/20 shadow-xl">
+                    <i data-lucide="wallet" class="w-8 h-8 text-indigo-200"></i>
+                </div>
+                <h1 class="text-2xl font-extrabold tracking-tight" id="auth-title">Welcome Back</h1>
+                <p class="text-xs text-indigo-200" id="auth-subtitle">Sign in to sync your personal ledger across devices</p>
+            </div>
+
+            <div class="bg-white/10 backdrop-blur-md p-6 rounded-3xl border border-white/20 shadow-2xl space-y-4">
+                <form id="auth-form" onsubmit="window.app.handleAuth(event)" class="space-y-3">
+                    <div>
+                        <label class="text-[11px] font-bold uppercase tracking-wider text-indigo-200 mb-1 block">Email Address</label>
+                        <input type="email" id="auth-email" required placeholder="you@example.com" class="w-full px-3.5 py-2.5 text-xs bg-black/20 text-white placeholder-indigo-300 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-white">
+                    </div>
+                    <div>
+                        <label class="text-[11px] font-bold uppercase tracking-wider text-indigo-200 mb-1 block">Password</label>
+                        <input type="password" id="auth-password" required placeholder="••••••••" class="w-full px-3.5 py-2.5 text-xs bg-black/20 text-white placeholder-indigo-300 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-white">
+                    </div>
+                    <div id="auth-error" class="text-xs text-rose-300 font-semibold hidden text-center"></div>
+                    <button type="submit" id="auth-submit-btn" class="w-full py-3 bg-white text-indigo-900 font-extrabold text-xs rounded-xl hover:bg-indigo-50 active:scale-98 transition shadow-lg">Sign In</button>
+                </form>
+
+                <div class="text-center pt-2 border-t border-white/10">
+                    <button type="button" onclick="window.app.toggleAuthMode()" class="text-xs text-indigo-200 hover:text-white transition font-medium" id="auth-toggle-text">
+                        Don't have an account? <span class="underline font-bold">Sign Up</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MOBILE PIN SECURITY OVERLAY (MOBILE ONLY) -->
     <div id="pin-screen" class="fixed inset-0 bg-indigo-900 text-white z-50 flex flex-col items-center justify-center p-6 hidden">
         <div class="text-center space-y-2 mb-8">
             <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3 backdrop-blur-md border border-white/20">
                 <i data-lucide="lock" class="w-8 h-8 text-indigo-200"></i>
             </div>
-            <h1 class="text-xl font-bold tracking-tight" id="pin-title">Security PIN Required</h1>
+            <h1 class="text-xl font-bold tracking-tight" id="pin-title">Screen Lock PIN Required</h1>
             <p class="text-xs text-indigo-200" id="pin-subtitle">Enter your 4-digit PIN to access your expenses</p>
         </div>
 
@@ -92,8 +127,8 @@
                 <i data-lucide="shield-alert" class="w-6 h-6"></i>
             </div>
             <div>
-                <h3 class="text-base font-bold text-slate-800">Forgot Security PIN?</h3>
-                <p class="text-xs text-slate-500 mt-1">Resetting your PIN will allow you to set up a new passcode. Your expense records will remain completely safe.</p>
+                <h3 class="text-base font-bold text-slate-800">Forgot Screen Lock PIN?</h3>
+                <p class="text-xs text-slate-500 mt-1">Resetting your PIN will allow you to set up a new passcode. Your cloud records remain completely safe.</p>
             </div>
             <div class="grid grid-cols-2 gap-2 pt-2">
                 <button onclick="window.app.closeForgotPinModal()" class="py-2.5 bg-slate-100 text-slate-700 font-semibold text-xs rounded-xl hover:bg-slate-200 transition">Cancel</button>
@@ -110,7 +145,7 @@
             </div>
             <div>
                 <h3 class="text-base font-bold text-slate-800">Erase All Ledger Data?</h3>
-                <p class="text-xs text-slate-500 mt-1">This action cannot be undone. All expense and income records will be permanently removed from this device and cloud.</p>
+                <p class="text-xs text-slate-500 mt-1">This action cannot be undone. All expense and income records will be permanently removed from your account.</p>
             </div>
             <div class="grid grid-cols-2 gap-2 pt-2">
                 <button onclick="window.app.closeClearDataModal()" class="py-2.5 bg-slate-100 text-slate-700 font-semibold text-xs rounded-xl hover:bg-slate-200 transition">Cancel</button>
@@ -140,7 +175,7 @@
                 <button id="install-btn" class="hidden bg-white/20 hover:bg-white/30 text-white text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1 font-semibold backdrop-blur-sm transition">
                     <i data-lucide="download" class="w-3.5 h-3.5"></i> Install
                 </button>
-                <button onclick="window.app.lockApp()" class="p-2 text-indigo-200 hover:text-white rounded-xl hover:bg-white/10 transition">
+                <button id="mobile-lock-btn" onclick="window.app.lockApp()" class="p-2 text-indigo-200 hover:text-white rounded-xl hover:bg-white/10 transition hidden" title="Lock Screen">
                     <i data-lucide="lock" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -303,23 +338,16 @@
 
             <!-- VIEW 4: SETTINGS / BACKUP -->
             <section id="view-settings" class="p-4 space-y-4 hidden">
-                <h2 class="text-lg font-bold text-slate-800">Settings & Sync</h2>
+                <h2 class="text-lg font-bold text-slate-800">Settings & Account</h2>
                 <div class="bg-white rounded-3xl border border-slate-100 p-4 space-y-4">
                     
-                    <!-- Real-Time Cloud Sync Locked Status Card -->
-                    <div>
-                        <div class="flex items-center justify-between mb-1">
-                            <div>
-                                <p class="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
-                                    <i data-lucide="cloud" class="w-4 h-4 text-indigo-600"></i>
-                                    Cloud Real-Time Sync
-                                </p>
-                                <p class="text-xs text-slate-400">Connected & Secured to Firebase Cloud (<span class="font-mono text-indigo-600">personal-use-385b5</span>)</p>
-                            </div>
-                            <span class="text-[10px] font-bold bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full border border-emerald-200 flex items-center gap-1">
-                                <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Active
-                            </span>
+                    <!-- Account Profile Card -->
+                    <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 flex justify-between items-center">
+                        <div>
+                            <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Signed in as</p>
+                            <p class="text-xs font-bold text-slate-800 mt-0.5" id="user-email-display">user@example.com</p>
                         </div>
+                        <button onclick="window.app.signOut()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs px-3 py-2 rounded-xl border border-rose-200 transition">Sign Out</button>
                     </div>
 
                     <hr class="border-slate-100">
@@ -332,11 +360,11 @@
                         <button onclick="window.app.openCategoryManager()" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-semibold px-3 py-1.5 rounded-lg border border-indigo-100">Manage</button>
                     </div>
 
-                    <hr class="border-slate-100">
+                    <hr class="border-slate-100" id="mobile-pin-setting-divider">
 
-                    <div class="flex items-center justify-between">
+                    <div class="flex items-center justify-between" id="mobile-pin-setting-row">
                         <div>
-                            <p class="text-sm font-semibold">Change Security PIN</p>
+                            <p class="text-sm font-semibold">Mobile Screen Lock PIN</p>
                             <p class="text-xs text-slate-400">Update your 4-digit passcode</p>
                         </div>
                         <button onclick="window.app.openResetPinModal()" class="text-xs bg-slate-100 hover:bg-slate-200 font-medium px-3 py-1.5 rounded-lg border border-slate-200">Reset PIN</button>
@@ -362,7 +390,7 @@
 
                     <div>
                         <p class="text-sm font-semibold text-red-600">Clear All Ledger Data</p>
-                        <p class="text-xs text-slate-400 mb-2">Permanently erase all expenses recorded on this device and cloud</p>
+                        <p class="text-xs text-slate-400 mb-2">Permanently erase all expenses recorded on your account</p>
                         <button onclick="window.app.openClearDataModal()" class="w-full py-2.5 bg-red-50 text-red-600 border border-red-200 text-xs font-semibold rounded-xl flex items-center justify-center gap-2 hover:bg-red-100 transition">
                             <i data-lucide="trash-2" class="w-4 h-4"></i> Erase All Expenses
                         </button>
@@ -378,7 +406,7 @@
                     <i data-lucide="key-round" class="w-6 h-6"></i>
                 </div>
                 <div>
-                    <h3 class="text-base font-bold text-slate-800">Reset Security PIN?</h3>
+                    <h3 class="text-base font-bold text-slate-800">Reset Screen Lock PIN?</h3>
                     <p class="text-xs text-slate-500 mt-1">This will erase your current 4-digit PIN and prompt you to create a new passcode right away.</p>
                 </div>
                 <div class="grid grid-cols-2 gap-2 pt-2">
@@ -560,7 +588,6 @@
             'General': { color: '#64748b', icon: 'grid', subcategories: [] }
         };
 
-        // Secure hardcoded Firebase Project configuration
         const SECURE_FIREBASE_CONFIG = {
             apiKey: "AIzaSyDtg4qSodMbwevQvu9ECpb8S-WvxE6UKik",
             authDomain: "personal-use-385b5.firebaseapp.com",
@@ -572,102 +599,194 @@
 
         class App {
             constructor() {
+                this.currentUser = null;
+                this.isSignUpMode = false;
+                
+                // Mobile PIN lock properties
+                this.isMobile = window.innerWidth <= 768 || /Mobi|Android/i.test(navigator.userAgent);
                 this.pinInput = "";
-                this.savedPin = localStorage.getItem('app_pin') || null;
+                this.savedPin = null;
                 this.tempFirstPin = null;
                 
                 this.hideAmounts = localStorage.getItem('app_hide_amounts') === 'true';
-                
-                // Initialize categories from local storage or defaults
-                this.categories = JSON.parse(localStorage.getItem('app_categories')) || DEFAULT_CATEGORIES;
-                this.transactions = JSON.parse(localStorage.getItem('app_transactions')) || [];
+                this.categories = DEFAULT_CATEGORIES;
+                this.transactions = [];
 
                 this.pendingScanResults = [];
                 this.chartInstance = null;
                 this.deferredPrompt = null;
                 this.db = null;
+                this.auth = null;
+                this.unsubExpenses = null;
+                this.unsubCategories = null;
+                this.refreshInterval = null;
 
                 this.initPWA();
-                this.initSecurity();
-                this.initChart();
-                this.initFirebaseSync();
-                this.render();
+                this.initFirebase();
             }
 
-            /* --- SECURE FIREBASE REAL-TIME CLOUD SYNC & 1-HOUR REFRESH --- */
-            initFirebaseSync() {
+            /* --- FIREBASE & AUTH INITIALIZATION --- */
+            initFirebase() {
                 try {
                     if (!firebase.apps.length) {
                         firebase.initializeApp(SECURE_FIREBASE_CONFIG);
                     }
+                    this.auth = firebase.auth();
                     this.db = firebase.firestore();
 
-                    // 1. Real-time listener for Expenses
-                    this.db.collection('expenses').onSnapshot((snapshot) => {
-                        const cloudMap = new Map();
-                        this.transactions.forEach(t => cloudMap.set(String(t.id), t));
-                        const activeCloudIds = new Set();
+                    // Listen to Auth State Changes
+                    this.auth.onAuthStateChanged((user) => {
+                        if (user) {
+                            this.currentUser = user;
+                            document.getElementById('user-email-display').textContent = user.email;
+                            document.getElementById('auth-screen').classList.add('hidden');
+                            
+                            // Initialize user data sync
+                            this.initUserSync();
+                            this.initChart();
 
-                        snapshot.forEach((doc) => {
-                            activeCloudIds.add(String(doc.id));
-                            const cloudItem = { id: doc.id, ...doc.data() };
-                            const existing = cloudMap.get(String(cloudItem.id));
-
-                            if (!existing || (cloudItem.updatedAt || 0) >= (existing.updatedAt || 0)) {
-                                cloudMap.set(String(cloudItem.id), cloudItem);
-                            }
-                        });
-
-                        for (let [id] of cloudMap) {
-                            if (!activeCloudIds.has(String(id))) {
-                                cloudMap.delete(id);
-                            }
-                        }
-
-                        this.transactions = Array.from(cloudMap.values()).sort((a, b) => new Date(b.date) - new Date(a.date));
-                        localStorage.setItem('app_transactions', JSON.stringify(this.transactions));
-                        this.updateCloudBadge(true);
-                        this.render();
-                    }, (err) => {
-                        console.error("Firestore expense sync error:", err);
-                        this.updateCloudBadge(false);
-                    });
-
-                    // 2. Real-time listener for Categories & Subcategories
-                    this.db.collection('settings').doc('categories').onSnapshot((doc) => {
-                        if (doc.exists && doc.data().data) {
-                            try {
-                                const cloudCategories = JSON.parse(doc.data().data);
-                                if (cloudCategories && typeof cloudCategories === 'object') {
-                                    this.categories = cloudCategories;
-                                    localStorage.setItem('app_categories', JSON.stringify(this.categories));
-                                    this.render();
-                                }
-                            } catch (e) {
-                                console.error("Error parsing cloud categories:", e);
+                            // Check mobile lock PIN only on mobile devices
+                            if (this.isMobile) {
+                                document.getElementById('mobile-lock-btn').classList.remove('hidden');
+                                document.getElementById('mobile-pin-setting-row').classList.remove('hidden');
+                                document.getElementById('mobile-pin-setting-divider').classList.remove('hidden');
+                                this.savedPin = localStorage.getItem(`app_pin_${user.uid}`) || null;
+                                this.initSecurity();
+                            } else {
+                                document.getElementById('mobile-lock-btn').classList.add('hidden');
+                                document.getElementById('mobile-pin-setting-row').classList.add('hidden');
+                                document.getElementById('mobile-pin-setting-divider').classList.add('hidden');
                             }
                         } else {
-                            // If not in cloud yet, push initial categories to cloud
-                            this.saveCategoriesToCloud();
+                            this.currentUser = null;
+                            if (this.unsubExpenses) this.unsubExpenses();
+                            if (this.unsubCategories) this.unsubCategories();
+                            if (this.refreshInterval) clearInterval(this.refreshInterval);
+                            
+                            document.getElementById('pin-screen').classList.add('hidden');
+                            document.getElementById('auth-screen').classList.remove('hidden');
                         }
-                    }, (err) => {
-                        console.error("Firestore category sync error:", err);
                     });
-
-                    // 3. Periodic 1-Hour Background Refresh Timer
-                    setInterval(() => {
-                        this.refreshCloudData();
-                    }, 60 * 60 * 1000);
-
                 } catch (e) {
-                    console.error("Firebase init error:", e);
-                    this.updateCloudBadge(false);
+                    console.error("Firebase Auth init error:", e);
                 }
             }
 
+            toggleAuthMode() {
+                this.isSignUpMode = !this.isSignUpMode;
+                const title = document.getElementById('auth-title');
+                const subtitle = document.getElementById('auth-subtitle');
+                const submitBtn = document.getElementById('auth-submit-btn');
+                const toggleText = document.getElementById('auth-toggle-text');
+                document.getElementById('auth-error').classList.add('hidden');
+
+                if (this.isSignUpMode) {
+                    title.textContent = "Create Account";
+                    subtitle.textContent = "Set up your personal multi-device ledger";
+                    submitBtn.textContent = "Sign Up";
+                    toggleText.innerHTML = 'Already have an account? <span class="underline font-bold">Sign In</span>';
+                } else {
+                    title.textContent = "Welcome Back";
+                    subtitle.textContent = "Sign in to sync your personal ledger across devices";
+                    submitBtn.textContent = "Sign In";
+                    toggleText.innerHTML = 'Don\'t have an account? <span class="underline font-bold">Sign Up</span>';
+                }
+            }
+
+            async handleAuth(event) {
+                event.preventDefault();
+                const email = document.getElementById('auth-email').value.trim();
+                const password = document.getElementById('auth-password').value;
+                const errEl = document.getElementById('auth-error');
+                errEl.classList.add('hidden');
+
+                try {
+                    if (this.isSignUpMode) {
+                        await this.auth.createUserWithEmailAndPassword(email, password);
+                    } else {
+                        await this.auth.signInWithEmailAndPassword(email, password);
+                    }
+                } catch (err) {
+                    console.error("Auth error:", err);
+                    errEl.textContent = err.message;
+                    errEl.classList.remove('hidden');
+                }
+            }
+
+            signOut() {
+                if (confirm("Are you sure you want to sign out?")) {
+                    this.auth.signOut().then(() => {
+                        window.location.reload();
+                    });
+                }
+            }
+
+            /* --- USER-SPECIFIC CLOUD SYNC & 1-HOUR REFRESH --- */
+            initUserSync() {
+                if (!this.currentUser) return;
+                const uid = this.currentUser.uid;
+
+                // 1. Real-time listener for User Expenses Collection
+                this.unsubExpenses = this.db.collection('users').doc(uid).collection('expenses').onSnapshot((snapshot) => {
+                    const cloudMap = new Map();
+                    this.transactions.forEach(t => cloudMap.set(String(t.id), t));
+                    const activeCloudIds = new Set();
+
+                    snapshot.forEach((doc) => {
+                        activeCloudIds.add(String(doc.id));
+                        const cloudItem = { id: doc.id, ...doc.data() };
+                        const existing = cloudMap.get(String(cloudItem.id));
+
+                        if (!existing || (cloudItem.updatedAt || 0) >= (existing.updatedAt || 0)) {
+                            cloudMap.set(String(cloudItem.id), cloudItem);
+                        }
+                    });
+
+                    for (let [id] of cloudMap) {
+                        if (!activeCloudIds.has(String(id))) {
+                            cloudMap.delete(id);
+                        }
+                    }
+
+                    this.transactions = Array.from(cloudMap.values()).sort((a, b) => new Date(b.date) - new Date(a.date));
+                    this.updateCloudBadge(true);
+                    this.render();
+                }, (err) => {
+                    console.error("Firestore expense sync error:", err);
+                    this.updateCloudBadge(false);
+                });
+
+                // 2. Real-time listener for User Categories Document
+                this.unsubCategories = this.db.collection('users').doc(uid).collection('settings').doc('categories').onSnapshot((doc) => {
+                    if (doc.exists && doc.data().data) {
+                        try {
+                            const cloudCategories = JSON.parse(doc.data().data);
+                            if (cloudCategories && typeof cloudCategories === 'object') {
+                                this.categories = cloudCategories;
+                                this.render();
+                            }
+                        } catch (e) {
+                            console.error("Error parsing cloud categories:", e);
+                        }
+                    } else {
+                        this.categories = DEFAULT_CATEGORIES;
+                        this.saveCategoriesToCloud();
+                    }
+                }, (err) => {
+                    console.error("Firestore category sync error:", err);
+                });
+
+                // 3. Periodic 1-Hour Background Refresh Timer
+                this.refreshInterval = setInterval(() => {
+                    this.refreshCloudData();
+                }, 60 * 60 * 1000);
+            }
+
             refreshCloudData() {
-                if (!this.db) return;
-                this.db.collection('expenses').get().then((snapshot) => {
+                if (!this.currentUser || !this.db) return;
+                const uid = this.currentUser.uid;
+
+                this.db.collection('users').doc(uid).collection('expenses').get().then((snapshot) => {
                     const cloudMap = new Map();
                     this.transactions.forEach(t => cloudMap.set(String(t.id), t));
                     const activeCloudIds = new Set();
@@ -688,7 +807,6 @@
                     }
 
                     this.transactions = Array.from(cloudMap.values()).sort((a, b) => new Date(b.date) - new Date(a.date));
-                    localStorage.setItem('app_transactions', JSON.stringify(this.transactions));
                     this.updateCloudBadge(true);
                     this.render();
                 }).catch(err => {
@@ -707,20 +825,22 @@
                 }
             }
 
-            /* --- SECURITY & PIN METHODS --- */
+            /* --- MOBILE-ONLY PIN LOCK SECURITY --- */
             initSecurity() {
+                if (!this.isMobile || !this.currentUser) return;
                 const pinScreen = document.getElementById('pin-screen');
                 const forgotBtn = document.getElementById('forgot-pin-btn');
+                this.savedPin = localStorage.getItem(`app_pin_${this.currentUser.uid}`) || null;
 
                 if (this.savedPin) {
-                    document.getElementById('pin-title').textContent = "Security PIN Required";
+                    document.getElementById('pin-title').textContent = "Screen Lock PIN Required";
                     document.getElementById('pin-subtitle').textContent = "Enter your 4-digit PIN to access your expenses";
                     if (forgotBtn) forgotBtn.classList.remove('hidden');
                     pinScreen.classList.remove('hidden');
                 } else {
                     this.tempFirstPin = null;
-                    document.getElementById('pin-title').textContent = "Set Up Security PIN";
-                    document.getElementById('pin-subtitle').textContent = "Create a 4-digit PIN to secure your financial data";
+                    document.getElementById('pin-title').textContent = "Set Up Screen Lock PIN";
+                    document.getElementById('pin-subtitle').textContent = "Create a 4-digit PIN to protect your mobile screen";
                     if (forgotBtn) forgotBtn.classList.add('hidden');
                     pinScreen.classList.remove('hidden');
                 }
@@ -761,6 +881,9 @@
             }
 
             processPin() {
+                if (!this.currentUser) return;
+                const pinKey = `app_pin_${this.currentUser.uid}`;
+
                 if (!this.savedPin) {
                     if (!this.tempFirstPin) {
                         this.tempFirstPin = this.pinInput;
@@ -770,7 +893,7 @@
                     } else {
                         if (this.pinInput === this.tempFirstPin) {
                             this.savedPin = this.pinInput;
-                            localStorage.setItem('app_pin', this.savedPin);
+                            localStorage.setItem(pinKey, this.savedPin);
                             document.getElementById('pin-screen').classList.add('hidden');
                             this.tempFirstPin = null;
                             this.clearPin();
@@ -792,6 +915,7 @@
             }
 
             lockApp() {
+                if (!this.isMobile) return;
                 this.clearPin();
                 this.initSecurity();
             }
@@ -805,7 +929,8 @@
             }
 
             confirmForgotPinReset() {
-                localStorage.removeItem('app_pin');
+                if (!this.currentUser) return;
+                localStorage.removeItem(`app_pin_${this.currentUser.uid}`);
                 this.savedPin = null;
                 this.tempFirstPin = null;
                 this.closeForgotPinModal();
@@ -822,7 +947,8 @@
             }
 
             confirmResetPin() {
-                localStorage.removeItem('app_pin');
+                if (!this.currentUser) return;
+                localStorage.removeItem(`app_pin_${this.currentUser.uid}`);
                 this.savedPin = null;
                 this.tempFirstPin = null;
                 this.closeResetPinModal();
@@ -1024,7 +1150,7 @@
                     subcategories: []
                 };
 
-                this.saveCategories();
+                this.saveCategoriesToCloud();
                 nameInput.value = "";
                 this.renderCategoryManagerList();
             }
@@ -1032,7 +1158,7 @@
             deleteCategory(cat) {
                 if (Object.keys(this.categories).length <= 1) return;
                 delete this.categories[cat];
-                this.saveCategories();
+                this.saveCategoriesToCloud();
                 this.renderCategoryManagerList();
             }
 
@@ -1048,7 +1174,7 @@
                 }
                 if (!this.categories[cat].subcategories.includes(subName)) {
                     this.categories[cat].subcategories.push(subName);
-                    this.saveCategories();
+                    this.saveCategoriesToCloud();
                 }
                 input.value = "";
                 this.renderCategoryManagerList();
@@ -1057,19 +1183,15 @@
             removeSubcategory(cat, sub) {
                 if (this.categories[cat] && this.categories[cat].subcategories) {
                     this.categories[cat].subcategories = this.categories[cat].subcategories.filter(s => s !== sub);
-                    this.saveCategories();
+                    this.saveCategoriesToCloud();
                     this.renderCategoryManagerList();
                 }
             }
 
-            saveCategories() {
-                localStorage.setItem('app_categories', JSON.stringify(this.categories));
-                this.saveCategoriesToCloud();
-            }
-
             saveCategoriesToCloud() {
-                if (!this.db) return;
-                this.db.collection('settings').doc('categories').set({
+                if (!this.currentUser || !this.db) return;
+                const uid = this.currentUser.uid;
+                this.db.collection('users').doc(uid).collection('settings').doc('categories').set({
                     data: JSON.stringify(this.categories),
                     updatedAt: Date.now()
                 }).catch(err => {
@@ -1253,6 +1375,9 @@
             /* --- CHART RENDERING --- */
             initChart() {
                 const ctx = document.getElementById('categoryChart').getContext('2d');
+                if (this.chartInstance) {
+                    this.chartInstance.destroy();
+                }
                 this.chartInstance = new Chart(ctx, {
                     type: 'doughnut',
                     data: {
@@ -1363,6 +1488,8 @@
 
             saveTransaction(event) {
                 event.preventDefault();
+                if (!this.currentUser || !this.db) return;
+
                 const id = document.getElementById('form-id').value || (Date.now().toString() + Math.random().toString(36).substr(2, 4));
                 const type = document.getElementById('form-type').value || 'expense';
                 const vendor = document.getElementById('form-vendor').value;
@@ -1373,41 +1500,24 @@
                 const updatedAt = Date.now();
 
                 const txnObj = { id, type, vendor, amount, date, category, subcategory, updatedAt };
+                const uid = this.currentUser.uid;
 
-                if (this.db) {
-                    this.db.collection('expenses').doc(id).set(txnObj).then(() => {
-                        this.closeModal();
-                    }).catch(err => {
-                        console.error("Firestore save transaction error:", err);
-                        this.localSaveTransaction(txnObj);
-                    });
-                } else {
-                    this.localSaveTransaction(txnObj);
-                }
+                this.db.collection('users').doc(uid).collection('expenses').doc(id).set(txnObj).then(() => {
+                    this.closeModal();
+                }).catch(err => {
+                    console.error("Firestore save transaction error:", err);
+                });
             }
 
-            localSaveTransaction(txnObj) {
-                const idx = this.transactions.findIndex(t => String(t.id) === String(txnObj.id));
-                if (idx !== -1) {
-                    this.transactions[idx] = txnObj;
-                } else {
-                    this.transactions.unshift(txnObj);
-                }
-                this.saveData();
-                this.closeModal();
-            }
-
-            /* DIRECT DELETION WITH CLOUD FIREBASE DELETION SYNC */
             deleteTransaction(id) {
-                if (this.db) {
-                    this.db.collection('expenses').doc(String(id)).delete().then(() => {
-                        console.log("Deleted from Firestore successfully:", id);
-                    }).catch(err => {
-                        console.error("Firestore delete transaction error:", err);
-                    });
-                }
-                this.transactions = this.transactions.filter(t => String(t.id) !== String(id));
-                this.saveData();
+                if (!this.currentUser || !this.db) return;
+                const uid = this.currentUser.uid;
+
+                this.db.collection('users').doc(uid).collection('expenses').doc(String(id)).delete().then(() => {
+                    console.log("Deleted from Firestore successfully:", id);
+                }).catch(err => {
+                    console.error("Firestore delete transaction error:", err);
+                });
             }
 
             filterTransactions() {
@@ -1933,7 +2043,8 @@
             }
 
             batchSaveScanResults() {
-                if (this.pendingScanResults.length === 0) return;
+                if (!this.currentUser || !this.db || this.pendingScanResults.length === 0) return;
+                const uid = this.currentUser.uid;
 
                 this.pendingScanResults.forEach(item => {
                     const id = Date.now().toString() + Math.random().toString(36).substr(2, 4);
@@ -1949,16 +2060,8 @@
                         updatedAt: updatedAt
                     };
 
-                    if (this.db) {
-                        this.db.collection('expenses').doc(id).set(txnObj);
-                    } else {
-                        this.transactions.unshift(txnObj);
-                    }
+                    this.db.collection('users').doc(uid).collection('expenses').doc(id).set(txnObj);
                 });
-
-                if (!this.db) {
-                    this.saveData();
-                }
 
                 this.pendingScanResults = [];
                 document.getElementById('ocr-results-container').classList.add('hidden');
@@ -1966,11 +2069,6 @@
             }
 
             /* --- DATA PERSISTENCE & EXPORT / IMPORT --- */
-            saveData() {
-                localStorage.setItem('app_transactions', JSON.stringify(this.transactions));
-                this.render();
-            }
-
             exportToCsv() {
                 if (!this.transactions || this.transactions.length === 0) return;
 
@@ -2000,7 +2098,7 @@
 
             importFromCsv(event) {
                 const file = event.target.files && event.target.files[0];
-                if (!file) return;
+                if (!file || !this.currentUser || !this.db) return;
 
                 const reader = new FileReader();
                 reader.onload = (e) => {
@@ -2010,7 +2108,7 @@
                         
                         if (lines.length <= 1) return;
 
-                        const importedItems = [];
+                        const uid = this.currentUser.uid;
                         const updatedAt = Date.now();
 
                         for (let i = 1; i < lines.length; i++) {
@@ -2027,20 +2125,11 @@
                                     const id = Date.now().toString() + Math.random().toString(36).substr(2, 4);
                                     const txnObj = { id, date: date || new Date().toISOString().split('T')[0], type, vendor, category, subcategory, amount, updatedAt };
 
-                                    if (this.db) {
-                                        this.db.collection('expenses').doc(id).set(txnObj);
-                                    } else {
-                                        importedItems.push(txnObj);
-                                    }
+                                    this.db.collection('users').doc(uid).collection('expenses').doc(id).set(txnObj);
                                 }
                             }
                         }
-
-                        if (!this.db && importedItems.length > 0) {
-                            this.transactions = [...importedItems, ...this.transactions];
-                            this.saveData();
-                            this.switchView('dashboard');
-                        }
+                        this.switchView('dashboard');
                     } catch (err) {
                         console.error("Error parsing CSV import:", err);
                     } finally {
@@ -2085,15 +2174,14 @@
             }
 
             confirmClearAllData() {
-                if (this.db) {
-                    this.transactions.forEach(t => {
-                        this.db.collection('expenses').doc(String(t.id)).delete().catch(err => {
-                            console.error("Error deleting item from cloud during clear all:", err);
-                        });
+                if (!this.currentUser || !this.db) return;
+                const uid = this.currentUser.uid;
+
+                this.transactions.forEach(t => {
+                    this.db.collection('users').doc(uid).collection('expenses').doc(String(t.id)).delete().catch(err => {
+                        console.error("Error deleting item from cloud during clear all:", err);
                     });
-                }
-                this.transactions = [];
-                this.saveData();
+                });
                 this.closeClearDataModal();
             }
 
