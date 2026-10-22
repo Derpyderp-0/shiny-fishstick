@@ -601,14 +601,18 @@
                     }
                     this.db = firebase.firestore();
 
-                    // 1. Real-time listener: instant cross-device updates using timestamp reconciliation
+                    // 1. Real-time listener: instant cross-device updates & deletions using timestamp reconciliation
                     this.db.collection('expenses').onSnapshot((snapshot) => {
                         const cloudMap = new Map();
                         
                         // Load current local transactions into map
                         this.transactions.forEach(t => cloudMap.set(String(t.id), t));
 
+                        // Track active cloud document IDs to detect deletions from other devices
+                        const activeCloudIds = new Set();
+
                         snapshot.forEach((doc) => {
+                            activeCloudIds.add(String(doc.id));
                             const cloudItem = { id: doc.id, ...doc.data() };
                             const existing = cloudMap.get(String(cloudItem.id));
 
@@ -616,6 +620,13 @@
                                 cloudMap.set(String(cloudItem.id), cloudItem);
                             }
                         });
+
+                        // Remove items that were deleted from Firestore by another device
+                        for (let [id] of cloudMap) {
+                            if (!activeCloudIds.has(String(id))) {
+                                cloudMap.delete(id);
+                            }
+                        }
 
                         this.transactions = Array.from(cloudMap.values()).sort((a, b) => new Date(b.date) - new Date(a.date));
                         localStorage.setItem('app_transactions', JSON.stringify(this.transactions));
@@ -642,14 +653,22 @@
                 this.db.collection('expenses').get().then((snapshot) => {
                     const cloudMap = new Map();
                     this.transactions.forEach(t => cloudMap.set(String(t.id), t));
+                    const activeCloudIds = new Set();
 
                     snapshot.forEach((doc) => {
+                        activeCloudIds.add(String(doc.id));
                         const cloudItem = { id: doc.id, ...doc.data() };
                         const existing = cloudMap.get(String(cloudItem.id));
                         if (!existing || (cloudItem.updatedAt || 0) >= (existing.updatedAt || 0)) {
                             cloudMap.set(String(cloudItem.id), cloudItem);
                         }
                     });
+
+                    for (let [id] of cloudMap) {
+                        if (!activeCloudIds.has(String(id))) {
+                            cloudMap.delete(id);
+                        }
+                    }
 
                     this.transactions = Array.from(cloudMap.values()).sort((a, b) => new Date(b.date) - new Date(a.date));
                     localStorage.setItem('app_transactions', JSON.stringify(this.transactions));
@@ -1350,11 +1369,13 @@
                 this.closeModal();
             }
 
-            /* DIRECT DELETION UPON TRASH ICON TAP */
+            /* DIRECT DELETION WITH CLOUD FIREBASE DELETION SYNC */
             deleteTransaction(id) {
                 if (this.db) {
-                    this.db.collection('expenses').doc(id).delete().catch(err => {
-                        console.error("Firestore delete error:", err);
+                    this.db.collection('expenses').doc(String(id)).delete().then(() => {
+                        console.log("Deleted from Firestore successfully:", id);
+                    }).catch(err => {
+                        console.error("Firestore delete transaction error:", err);
                     });
                 }
                 this.transactions = this.transactions.filter(t => String(t.id) !== String(id));
@@ -2028,6 +2049,7 @@
                 return result;
             }
 
+      /* --- CLEAR ALL DATA WITH CLOUD SYNC DELETION --- */
             openClearDataModal() {
                 document.getElementById('clear-data-modal').classList.remove('hidden');
             }
@@ -2039,7 +2061,9 @@
             confirmClearAllData() {
                 if (this.db) {
                     this.transactions.forEach(t => {
-                        this.db.collection('expenses').doc(t.id).delete();
+                        this.db.collection('expenses').doc(String(t.id)).delete().catch(err => {
+                            console.error("Error deleting item from cloud during clear all:", err);
+                        });
                     });
                 }
                 this.transactions = [];
