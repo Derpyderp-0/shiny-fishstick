@@ -6,7 +6,7 @@
     <title>Smart Expense Tracker PWA</title>
     <!-- PWA Manifest & Theme Color -->
     <meta name="theme-color" content="#4f46e5">
-    <meta name="description" content="Offline-first Smart Expense Tracker PWA with Receipt Scanning, Bank Statement Parser OCR & Cloud Sync">
+    <meta name="description" content="Offline-first Smart Expense Tracker PWA with Receipt Scanning & Bank Statement Parser OCR">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2845/2845722.png">
     
     <!-- Tailwind CSS -->
@@ -74,6 +74,45 @@
                 <i data-lucide="delete" class="w-5 h-5"></i>
             </button>
         </div>
+
+        <!-- Forgot PIN Link -->
+        <button id="forgot-pin-btn" onclick="window.app.openForgotPinModal()" class="mt-6 text-xs text-indigo-200 hover:text-white underline underline-offset-4 transition hidden">
+            Forgot PIN?
+        </button>
+    </div>
+
+    <!-- FORGOT PIN / RECOVERY MODAL -->
+    <div id="forgot-pin-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 text-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div class="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto text-indigo-600 border border-indigo-100">
+                <i data-lucide="shield-alert" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h3 class="text-base font-bold text-slate-800">Forgot Security PIN?</h3>
+                <p class="text-xs text-slate-500 mt-1">Resetting your PIN will allow you to set up a new passcode. Your expense records will remain completely safe.</p>
+            </div>
+            <div class="grid grid-cols-2 gap-2 pt-2">
+                <button onclick="window.app.closeForgotPinModal()" class="py-2.5 bg-slate-100 text-slate-700 font-semibold text-xs rounded-xl hover:bg-slate-200 transition">Cancel</button>
+                <button onclick="window.app.confirmForgotPinReset()" class="py-2.5 bg-indigo-600 text-white font-semibold text-xs rounded-xl hover:bg-indigo-700 transition">Reset PIN Now</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CLEAR ALL DATA CONFIRMATION MODAL -->
+    <div id="clear-data-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 text-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div class="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mx-auto text-red-600 border border-red-100">
+                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h3 class="text-base font-bold text-slate-800">Erase All Ledger Data?</h3>
+                <p class="text-xs text-slate-500 mt-1">This action cannot be undone. All expense and income records will be permanently removed from this device.</p>
+            </div>
+            <div class="grid grid-cols-2 gap-2 pt-2">
+                <button onclick="window.app.closeClearDataModal()" class="py-2.5 bg-slate-100 text-slate-700 font-semibold text-xs rounded-xl hover:bg-slate-200 transition">Cancel</button>
+                <button onclick="window.app.confirmClearAllData()" class="py-2.5 bg-red-600 text-white font-semibold text-xs rounded-xl hover:bg-red-700 transition">Yes, Erase All</button>
+            </div>
+        </div>
     </div>
 
     <!-- MAIN APP CONTAINER -->
@@ -82,12 +121,7 @@
         <!-- HEADER -->
         <header class="bg-indigo-600 text-white p-4 pt-6 flex justify-between items-center shadow-md">
             <div>
-                <div class="flex items-center gap-1.5">
-                    <span class="text-[10px] font-bold tracking-widest uppercase text-indigo-200">Personal Ledger</span>
-                    <span id="cloud-sync-badge" class="bg-emerald-400/20 text-emerald-200 text-[9px] font-semibold px-1.5 py-0.5 rounded-full flex items-center gap-1">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Cloud Synced
-                    </span>
-                </div>
+                <span class="text-[10px] font-bold tracking-widest uppercase text-indigo-200">Personal Ledger</span>
                 <h1 class="text-lg font-extrabold flex items-center gap-2">
                     <i data-lucide="wallet" class="w-5 h-5"></i>
                     Expense Tracking
@@ -196,68 +230,53 @@
 
             <!-- VIEW 3: SCAN & OCR RECEIPT / STATEMENT / TNG -->
             <section id="view-scan" class="p-4 space-y-4 hidden">
-                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm text-center">
-                    <div class="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-3 text-indigo-600">
-                        <i data-lucide="scan-line" class="w-6 h-6"></i>
+                <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm text-center">
+                    <div class="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-3 text-indigo-600 border border-indigo-100/50">
+                        <i data-lucide="scan-line" class="w-7 h-7"></i>
                     </div>
-                    <h2 class="text-base font-bold text-slate-800">Malaysian eWallet & Bank OCR Parser</h2>
-                    <p class="text-xs text-slate-500 mt-1">Upload RHB Mobile App statements or <span class="font-semibold text-indigo-600">Touch 'n Go (TNG) eWallet screenshots</span>. Extracts exact debits & merchants automatically.</p>
+                    <h2 class="text-base font-bold text-slate-800">Scan your transaction to Record!</h2>
+                    <p class="text-xs text-slate-500 mt-1 max-w-xs mx-auto">Upload bank statements, eWallet screenshots, or receipts to automatically extract transactions.</p>
 
-                    <!-- File Upload Inputs -->
-                    <div class="mt-4 flex flex-col gap-2 max-w-xs mx-auto">
-                        <label class="cursor-pointer bg-indigo-600 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-sm hover:bg-indigo-700 transition flex items-center justify-center gap-2">
-                            <i data-lucide="camera" class="w-4 h-4"></i>
-                            <span>Take Photo / Camera</span>
-                            <input type="file" accept="image/*" capture="environment" class="hidden" onchange="window.app.handleFileUpload(event)">
-                        </label>
-                        <label class="cursor-pointer bg-slate-800 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-sm hover:bg-slate-900 transition flex items-center justify-center gap-2">
+                    <!-- Consolidated Single Upload Input -->
+                    <div class="mt-5 max-w-xs mx-auto">
+                        <label class="cursor-pointer bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold px-5 py-3.5 rounded-2xl shadow-md shadow-indigo-200 transition-all flex items-center justify-center gap-2.5">
                             <i data-lucide="file-up" class="w-4 h-4"></i>
-                            <span>Upload Screenshot / Image</span>
+                            <span>Upload Images / PDF</span>
                             <input type="file" accept="image/*,application/pdf" class="hidden" onchange="window.app.handleFileUpload(event)">
                         </label>
                     </div>
                 </div>
 
                 <!-- OCR Loader -->
-                <div id="ocr-loader" class="hidden bg-indigo-50 border border-indigo-100 rounded-2xl p-6 text-center space-y-3">
+                <div id="ocr-loader" class="hidden bg-indigo-50/80 border border-indigo-100 rounded-3xl p-6 text-center space-y-3 backdrop-blur-sm">
                     <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent"></div>
-                    <p id="ocr-status-text" class="text-xs font-semibold text-indigo-800">Parsing Screenshot & Merchants...</p>
-                    <div class="w-full bg-indigo-200 h-1.5 rounded-full overflow-hidden max-w-xs mx-auto">
-                        <div id="ocr-progress" class="bg-indigo-600 h-full w-0 transition-all duration-300"></div>
+                    <p id="ocr-status-text" class="text-xs font-semibold text-indigo-900">Parsing Statement & Merchants...</p>
+                    <div class="w-full bg-indigo-200/60 h-2 rounded-full overflow-hidden max-w-xs mx-auto">
+                        <div id="ocr-progress" class="bg-indigo-600 h-full w-0 transition-all duration-300 rounded-full"></div>
                     </div>
                 </div>
 
                 <!-- Extracted Multiple Transactions List -->
                 <div id="ocr-results-container" class="hidden space-y-3">
-                    <div class="flex justify-between items-center">
+                    <div class="flex justify-between items-center px-1">
                         <h3 class="text-xs font-bold uppercase text-slate-400 tracking-wider">Parsed Expenses</h3>
                         <span class="text-xs bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-semibold" id="ocr-found-count">0 Items</span>
                     </div>
-                    <p class="text-[11px] text-slate-500">Verify extracted Merchant, MYR Amount, and Category before saving to your cloud ledger.</p>
+                    <p class="text-[11px] text-slate-500 px-1">Verify extracted Merchant, MYR Amount, and Category before saving to your ledger.</p>
                     <div id="ocr-detected-list" class="space-y-2">
                         <!-- Detected entries render dynamically -->
                     </div>
-                    <button onclick="window.app.batchSaveScanResults()" class="w-full bg-indigo-600 text-white font-semibold text-sm py-3 rounded-xl shadow-md hover:bg-indigo-700 transition flex items-center justify-center gap-2">
+                    <button onclick="window.app.batchSaveScanResults()" class="w-full bg-indigo-600 text-white font-semibold text-sm py-3.5 rounded-2xl shadow-md hover:bg-indigo-700 active:scale-98 transition flex items-center justify-center gap-2">
                         <i data-lucide="check-circle-2" class="w-4 h-4"></i>
-                        <span>Confirm & Import to Cloud Expenses</span>
+                        <span>Confirm & Import to MYR Expenses</span>
                     </button>
                 </div>
             </section>
 
             <!-- VIEW 4: SETTINGS / BACKUP -->
             <section id="view-settings" class="p-4 space-y-4 hidden">
-                <h2 class="text-lg font-bold text-slate-800">Settings & Cloud Account</h2>
+                <h2 class="text-lg font-bold text-slate-800">Settings & Data</h2>
                 <div class="bg-white rounded-3xl border border-slate-100 p-4 space-y-4">
-                    <div class="bg-indigo-50 border border-indigo-100 p-3 rounded-2xl flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold">
-                            <i data-lucide="cloud" class="w-5 h-5"></i>
-                        </div>
-                        <div class="flex-1 overflow-hidden">
-                            <p class="text-xs font-bold text-indigo-900">Multi-Device Cloud Sync Active</p>
-                            <p id="user-uid-display" class="text-[10px] text-indigo-600 font-mono truncate">Connecting...</p>
-                        </div>
-                    </div>
-
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm font-semibold">Categories & Subcategories</p>
@@ -283,8 +302,8 @@
                     </div>
                     <hr class="border-slate-100">
                     <div>
-                        <p class="text-sm font-semibold text-red-600">Clear All Cloud Ledger Data</p>
-                        <p class="text-xs text-slate-400 mb-2">Permanently erase all expenses recorded on your cloud database</p>
+                        <p class="text-sm font-semibold text-red-600">Clear All Ledger Data</p>
+                        <p class="text-xs text-slate-400 mb-2">Permanently erase all expenses recorded on this device</p>
                         <button onclick="window.app.openClearDataModal()" class="w-full py-2.5 bg-red-50 text-red-600 border border-red-200 text-xs font-semibold rounded-xl flex items-center justify-center gap-2 hover:bg-red-100 transition">
                             <i data-lucide="trash-2" class="w-4 h-4"></i> Erase All Expenses
                         </button>
@@ -292,23 +311,6 @@
                 </div>
             </section>
         </main>
-
-        <!-- CLEAR ALL DATA CONFIRMATION MODAL -->
-        <div id="clear-data-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-            <div class="bg-white w-full max-w-sm rounded-3xl p-6 text-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                <div class="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mx-auto text-red-600 border border-red-100">
-                    <i data-lucide="alert-triangle" class="w-6 h-6"></i>
-                </div>
-                <div>
-                    <h3 class="text-base font-bold text-slate-800">Erase All Expenses?</h3>
-                    <p class="text-xs text-slate-500 mt-1">This will permanently delete all stored expense records from your cloud database. This action cannot be undone.</p>
-                </div>
-                <div class="grid grid-cols-2 gap-2 pt-2">
-                    <button onclick="window.app.closeClearDataModal()" class="py-2.5 bg-slate-100 text-slate-700 font-semibold text-xs rounded-xl hover:bg-slate-200 transition">Cancel</button>
-                    <button onclick="window.app.confirmClearAllData()" class="py-2.5 bg-red-600 text-white font-semibold text-xs rounded-xl hover:bg-red-700 transition">Yes, Erase All</button>
-                </div>
-            </div>
-        </div>
 
         <!-- RESET PIN CONFIRMATION MODAL -->
         <div id="reset-pin-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
@@ -414,7 +416,7 @@
                                 <!-- Populated dynamically -->
                             </select>
                         </div>
-                        <div>
+                        <div id="subcategory-field-container">
                             <label class="text-xs font-semibold text-slate-600 mb-1 block">Subcategory (Optional)</label>
                             <select id="form-subcategory" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                 <!-- Populated dynamically -->
@@ -486,12 +488,8 @@
 
     </div>
 
-    <!-- JAVASCRIPT APPLICATION LOGIC & FIREBASE SDK -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
+    <!-- JAVASCRIPT APPLICATION LOGIC -->
+    <script>
         const DEFAULT_CATEGORIES = {
             'Food & Dining': { color: '#6366f1', icon: 'utensils', subcategories: ['Groceries', 'Restaurants', 'Cafes & Coffee', 'Fast Food'] },
             'Shopping': { color: '#ec4899', icon: 'shopping-bag', subcategories: ['Clothing', 'Online Shopping', 'Electronics', 'Malls'] },
@@ -500,182 +498,50 @@
             'Utilities & Services': { color: '#f59e0b', icon: 'zap', subcategories: ['Electricity', 'Water', 'Internet', 'Mobile Prepaid'] },
             'Entertainment & Digital': { color: '#8b5cf6', icon: 'film', subcategories: ['Streaming', 'Games', 'Subscriptions', 'Cinema'] },
             'Income & Salary': { color: '#10b981', icon: 'dollar-sign', subcategories: ['Salary', 'Freelance', 'Investments', 'Bonus'] },
-            'General': { color: '#64748b', icon: 'grid', subcategories: ['Uncategorized', 'Misc'] }
+            'General': { color: '#64748b', icon: 'grid', subcategories: [] }
         };
 
         class App {
             constructor() {
                 this.pinInput = "";
                 this.savedPin = localStorage.getItem('app_pin') || null;
+                this.tempFirstPin = null;
+                
                 this.hideAmounts = localStorage.getItem('app_hide_amounts') === 'true';
+                this.categories = JSON.parse(localStorage.getItem('app_categories')) || DEFAULT_CATEGORIES;
 
-                this.categories = DEFAULT_CATEGORIES;
-                this.transactions = [];
+                this.transactions = JSON.parse(localStorage.getItem('app_transactions')) || [
+                    { id: '1', vendor: 'Jaya Grocer', type: 'expense', amount: 84.50, category: 'Food & Dining', subcategory: 'Groceries', date: '2026-10-22' },
+                    { id: '2', vendor: 'PETRONAS Fuel', type: 'expense', amount: 50.00, category: 'Transportation', subcategory: 'Fuel', date: '2026-10-21' },
+                    { id: '3', vendor: 'TNB Electricity Bill', type: 'expense', amount: 120.30, category: 'Utilities & Services', subcategory: 'Electricity', date: '2026-10-20' },
+                    { id: '4', vendor: 'Monthly Salary', type: 'income', amount: 4500.00, category: 'Income & Salary', subcategory: 'Salary', date: '2026-10-15' }
+                ];
+
                 this.pendingScanResults = [];
                 this.chartInstance = null;
                 this.deferredPrompt = null;
 
-                this.appId = typeof __app_id !== 'undefined' ? __app_id : 'default-expense-app';
-                this.firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-                this.initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-                this.db = null;
-                this.auth = null;
-                this.userId = null;
-                this.unsubscribeTxns = null;
-
                 this.initPWA();
                 this.initSecurity();
                 this.initChart();
-                this.initFirebase();
-            }
-
-            /* --- FIREBASE & CLOUD SYNC INITIALIZATION --- */
-            async initFirebase() {
-                try {
-                    if (!this.firebaseConfig) {
-                        console.warn("Firebase config not available. Running in local-only fallback mode.");
-                        this.loadLocalFallbackData();
-                        return;
-                    }
-
-                    const app = initializeApp(this.firebaseConfig);
-                    this.auth = getAuth(app);
-                    this.db = getFirestore(app);
-
-                    if (this.initialAuthToken) {
-                        await signInWithCustomToken(this.auth, this.initialAuthToken);
-                    } else {
-                        await signInAnonymously(this.auth);
-                    }
-
-                    this.userId = this.auth.currentUser ? this.auth.currentUser.uid : crypto.randomUUID();
-                    
-                    const uidDisplay = document.getElementById('user-uid-display');
-                    if (uidDisplay) {
-                        uidDisplay.textContent = `Cloud Account ID: ${this.userId}`;
-                    }
-
-                    this.setupFirestoreListeners();
-                } catch (err) {
-                    console.error("Firebase init error:", err);
-                    this.loadLocalFallbackData();
-                }
-            }
-
-            setupFirestoreListeners() {
-                if (!this.userId || !this.db) return;
-
-                const txnsRef = collection(this.db, 'artifacts', this.appId, 'users', this.userId, 'transactions');
-                
-                this.unsubscribeTxns = onSnapshot(txnsRef, (snapshot) => {
-                    const loadedTxns = [];
-                    snapshot.forEach(docSnap => {
-                        loadedTxns.push({ id: docSnap.id, ...docSnap.data() });
-                    });
-
-                    loadedTxns.sort((a, b) => new Date(b.date) - new Date(a.date));
-                    this.transactions = loadedTxns;
-
-                    if (this.transactions.length === 0) {
-                        this.seedInitialTransactions();
-                    } else {
-                        this.render();
-                    }
-                }, (error) => {
-                    console.error("Firestore snapshot error:", error);
-                });
-
-                this.loadCategoriesFromCloud();
-            }
-
-            async seedInitialTransactions() {
-                // Dummy seed data removed as requested. Starting completely fresh at zero.
-                return;
-            }
-
-            copyWebpageUrl() {
-                const url = window.location.href;
-                const tempInput = document.createElement('input');
-                tempInput.value = url;
-                document.body.appendChild(tempInput);
-                tempInput.select();
-                try {
-                    document.execCommand('copy');
-                    alert("Live web page URL copied to clipboard! Paste it into your phone browser.");
-                } catch (e) {
-                    console.error("Failed to copy URL", e);
-                }
-                document.body.removeChild(tempInput);
-            }
-
-            shareLiveApp() {
-                const url = window.location.href;
-                if (navigator.share) {
-                    navigator.share({
-                        title: 'Smart Expense Tracker PWA',
-                        text: 'Track and sync your MYR expenses seamlessly between your laptop and phone!',
-                        url: url
-                    }).catch(err => console.log('Share canceled', err));
-                } else {
-                    this.copyWebpageUrl();
-                }
-            }
-
-            initQrCode() {
-                // Removed QR code dependency
-            }
-
-            async loadCategoriesFromCloud() {
-                try {
-                    const snap = await getDocs(collection(this.db, 'artifacts', this.appId, 'users', this.userId, 'settings'));
-                    let found = false;
-                    snap.forEach(d => {
-                        if (d.id === 'categories' && d.data().data) {
-                            this.categories = d.data().data;
-                            found = true;
-                        }
-                    });
-                    if (!found) {
-                        this.categories = DEFAULT_CATEGORIES;
-                        const catDocRef = doc(this.db, 'artifacts', this.appId, 'users', this.userId, 'settings', 'categories');
-                        await setDoc(catDocRef, { data: DEFAULT_CATEGORIES });
-                    }
-                    this.render();
-                } catch (e) {
-                    console.error("Error loading categories:", e);
-                }
-            }
-
-            async saveCategoriesToCloud() {
-                if (!this.userId || !this.db) return;
-                try {
-                    const catDocRef = doc(this.db, 'artifacts', this.appId, 'users', this.userId, 'settings', 'categories');
-                    await setDoc(catDocRef, { data: this.categories });
-                } catch (e) {
-                    console.error("Error saving categories to cloud:", e);
-                }
-            }
-
-            loadLocalFallbackData() {
-                const uidDisplay = document.getElementById('user-uid-display');
-                if (uidDisplay) uidDisplay.textContent = "Offline Local Storage Mode";
-                
-                this.categories = JSON.parse(localStorage.getItem('app_categories')) || DEFAULT_CATEGORIES;
-                this.transactions = JSON.parse(localStorage.getItem('app_transactions')) || [];
                 this.render();
             }
 
             /* --- SECURITY & PIN METHODS --- */
             initSecurity() {
                 const pinScreen = document.getElementById('pin-screen');
+                const forgotBtn = document.getElementById('forgot-pin-btn');
+
                 if (this.savedPin) {
                     document.getElementById('pin-title').textContent = "Security PIN Required";
                     document.getElementById('pin-subtitle').textContent = "Enter your 4-digit PIN to access your expenses";
+                    if (forgotBtn) forgotBtn.classList.remove('hidden');
                     pinScreen.classList.remove('hidden');
                 } else {
+                    this.tempFirstPin = null;
                     document.getElementById('pin-title').textContent = "Set Up Security PIN";
                     document.getElementById('pin-subtitle').textContent = "Create a 4-digit PIN to secure your financial data";
+                    if (forgotBtn) forgotBtn.classList.add('hidden');
                     pinScreen.classList.remove('hidden');
                 }
             }
@@ -716,16 +582,30 @@
 
             processPin() {
                 if (!this.savedPin) {
-                    this.savedPin = this.pinInput;
-                    localStorage.setItem('app_pin', this.savedPin);
-                    document.getElementById('pin-screen').classList.add('hidden');
-                    this.clearPin();
+                    if (!this.tempFirstPin) {
+                        this.tempFirstPin = this.pinInput;
+                        this.clearPin();
+                        document.getElementById('pin-title').textContent = "Confirm Your PIN";
+                        document.getElementById('pin-subtitle').textContent = "Re-enter your 4-digit PIN to confirm";
+                    } else {
+                        if (this.pinInput === this.tempFirstPin) {
+                            this.savedPin = this.pinInput;
+                            localStorage.setItem('app_pin', this.savedPin);
+                            document.getElementById('pin-screen').classList.add('hidden');
+                            this.tempFirstPin = null;
+                            this.clearPin();
+                        } else {
+                            this.tempFirstPin = null;
+                            this.clearPin();
+                            document.getElementById('pin-title').textContent = "PINs Do Not Match";
+                            document.getElementById('pin-subtitle').textContent = "Re-enter a 4-digit PIN to try again";
+                        }
+                    }
                 } else {
                     if (this.pinInput === this.savedPin) {
                         document.getElementById('pin-screen').classList.add('hidden');
                         this.clearPin();
                     } else {
-                        alert("Incorrect PIN. Please try again.");
                         this.clearPin();
                     }
                 }
@@ -733,9 +613,24 @@
 
             lockApp() {
                 this.clearPin();
-                document.getElementById('pin-title').textContent = "Security PIN Required";
-                document.getElementById('pin-subtitle').textContent = "Enter your 4-digit PIN to access your expenses";
-                document.getElementById('pin-screen').classList.remove('hidden');
+                this.initSecurity();
+            }
+
+            openForgotPinModal() {
+                document.getElementById('forgot-pin-modal').classList.remove('hidden');
+            }
+
+            closeForgotPinModal() {
+                document.getElementById('forgot-pin-modal').classList.add('hidden');
+            }
+
+            confirmForgotPinReset() {
+                localStorage.removeItem('app_pin');
+                this.savedPin = null;
+                this.tempFirstPin = null;
+                this.closeForgotPinModal();
+                this.clearPin();
+                this.initSecurity();
             }
 
             openResetPinModal() {
@@ -749,11 +644,11 @@
             confirmResetPin() {
                 localStorage.removeItem('app_pin');
                 this.savedPin = null;
+                this.tempFirstPin = null;
                 this.closeResetPinModal();
                 this.clearPin();
-                document.getElementById('pin-title').textContent = "Set Up Security PIN";
-                document.getElementById('pin-subtitle').textContent = "Create a new 4-digit PIN to secure your financial data";
-                document.getElementById('pin-screen').classList.remove('hidden');
+                this.switchView('dashboard');
+                this.initSecurity();
             }
 
             /* --- PRIVACY & FORMATTING --- */
@@ -827,24 +722,29 @@
                 const catTotal = filtered.reduce((acc, curr) => acc + (curr.amount || 0), 0);
                 document.getElementById('drilldown-cat-subtitle').textContent = `${filtered.length} transactions • ${this.formatCurrency(catTotal)}`;
 
-                // Render Subcategory breakdown pills
                 const pillsContainer = document.getElementById('drilldown-subcat-pills');
                 pillsContainer.innerHTML = "";
 
                 const subTotals = {};
                 filtered.forEach(t => {
-                    const sub = t.subcategory || 'General';
-                    subTotals[sub] = (subTotals[sub] || 0) + t.amount;
+                    const sub = t.subcategory || '';
+                    if (sub) {
+                        subTotals[sub] = (subTotals[sub] || 0) + t.amount;
+                    }
                 });
 
-                Object.keys(subTotals).forEach(sub => {
-                    const pill = document.createElement('span');
-                    pill.className = "text-[11px] font-semibold bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full border border-slate-200 flex items-center gap-1";
-                    pill.innerHTML = `<span>${sub}:</span> <span class="text-slate-900 font-bold">${this.formatCurrency(subTotals[sub])}</span>`;
-                    pillsContainer.appendChild(pill);
-                });
+                if (Object.keys(subTotals).length > 0) {
+                    pillsContainer.classList.remove('hidden');
+                    Object.keys(subTotals).forEach(sub => {
+                        const pill = document.createElement('span');
+                        pill.className = "text-[11px] font-semibold bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full border border-slate-200 flex items-center gap-1";
+                        pill.innerHTML = `<span>${sub}:</span> <span class="text-slate-900 font-bold">${this.formatCurrency(subTotals[sub])}</span>`;
+                        pillsContainer.appendChild(pill);
+                    });
+                } else {
+                    pillsContainer.classList.add('hidden');
+                }
 
-                // Render Transactions
                 const listContainer = document.getElementById('drilldown-items-list');
                 listContainer.innerHTML = "";
 
@@ -855,10 +755,11 @@
                         const isIncome = item.type === 'income';
                         const card = document.createElement('div');
                         card.className = "bg-slate-50 p-3 rounded-2xl border border-slate-100 flex justify-between items-center";
+                        const subText = item.subcategory ? ` • <span class="font-semibold text-slate-600">${item.subcategory}</span>` : '';
                         card.innerHTML = `
                             <div>
                                 <p class="text-xs font-bold text-slate-800">${item.vendor}</p>
-                                <p class="text-[10px] text-slate-400">${item.date} • <span class="font-semibold text-slate-600">${item.subcategory || 'General'}</span></p>
+                                <p class="text-[10px] text-slate-400">${item.date}${subText}</p>
                             </div>
                             <div class="flex items-center gap-2">
                                 <span class="text-xs font-extrabold ${isIncome ? 'text-emerald-600' : 'text-slate-800'}">
@@ -901,12 +802,13 @@
                     const div = document.createElement('div');
                     div.className = "bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2";
                     
-                    let subHtml = (catInfo.subcategories || []).map(s => 
+                    const subs = catInfo.subcategories || [];
+                    let subHtml = subs.length > 0 ? subs.map(s => 
                         `<span class="bg-white border border-slate-200 text-slate-700 px-2 py-0.5 rounded-lg text-[10px] font-semibold flex items-center gap-1">
                             ${s}
                             <button onclick="window.app.removeSubcategory('${cat}', '${s}')" class="text-slate-400 hover:text-red-500">×</button>
                         </span>`
-                    ).join('');
+                    ).join('') : '<span class="text-[10px] text-slate-400 italic">No subcategories</span>';
 
                     div.innerHTML = `
                         <div class="flex justify-between items-center">
@@ -920,7 +822,7 @@
                             ${subHtml}
                         </div>
                         <div class="flex gap-1 pt-1">
-                            <input type="text" id="add-sub-input-${cat.replace(/\s+/g, '-')}" placeholder="New Subcategory" class="flex-1 px-2 py-1 text-[11px] bg-white border border-slate-200 rounded-lg focus:outline-none">
+                            <input type="text" id="add-sub-input-${cat.replace(/\s+/g, '-')}" placeholder="New Subcategory (Optional)" class="flex-1 px-2 py-1 text-[11px] bg-white border border-slate-200 rounded-lg focus:outline-none">
                             <button onclick="window.app.addSubcategory('${cat}')" class="bg-slate-800 text-white px-2 py-1 text-[11px] font-semibold rounded-lg hover:bg-slate-900 transition">Add Sub</button>
                         </div>
                     `;
@@ -935,28 +837,26 @@
 
                 if (!name) return;
                 if (this.categories[name]) {
-                    alert('Category already exists');
                     return;
                 }
 
                 this.categories[name] = {
                     color: colorInput.value || '#6366f1',
                     icon: 'folder',
-                    subcategories: ['General']
+                    subcategories: []
                 };
 
-                this.saveCategoriesToCloud();
+                this.saveCategories();
                 nameInput.value = "";
                 this.renderCategoryManagerList();
             }
 
             deleteCategory(cat) {
                 if (Object.keys(this.categories).length <= 1) {
-                    alert("Cannot delete all categories.");
                     return;
                 }
                 delete this.categories[cat];
-                this.saveCategoriesToCloud();
+                this.saveCategories();
                 this.renderCategoryManagerList();
             }
 
@@ -972,7 +872,7 @@
                 }
                 if (!this.categories[cat].subcategories.includes(subName)) {
                     this.categories[cat].subcategories.push(subName);
-                    this.saveCategoriesToCloud();
+                    this.saveCategories();
                 }
                 input.value = "";
                 this.renderCategoryManagerList();
@@ -981,9 +881,13 @@
             removeSubcategory(cat, sub) {
                 if (this.categories[cat] && this.categories[cat].subcategories) {
                     this.categories[cat].subcategories = this.categories[cat].subcategories.filter(s => s !== sub);
-                    this.saveCategoriesToCloud();
+                    this.saveCategories();
                     this.renderCategoryManagerList();
                 }
+            }
+
+            saveCategories() {
+                localStorage.setItem('app_categories', JSON.stringify(this.categories));
             }
 
             /* --- CALCULATIONS & DASHBOARD RENDER --- */
@@ -1023,7 +927,6 @@
                 this.renderCategoryDropdowns();
                 const { expenses, income, net } = this.calculateTotals();
 
-                // Privacy Eye Icon Update
                 const eyeIcon = document.getElementById('privacy-eye-icon');
                 const eyeText = document.getElementById('privacy-eye-text');
                 if (eyeIcon) {
@@ -1042,7 +945,7 @@
                 categoryList.innerHTML = "";
 
                 Object.keys(this.categories).forEach(cat => {
-                    if (cat === 'Income & Salary') return; // Hide salary from expense pie list
+                    if (cat === 'Income & Salary') return;
                     const amount = totals[cat] || 0;
                     const percent = expenses > 0 ? ((amount / expenses) * 100).toFixed(0) : 0;
                     const catInfo = this.categories[cat];
@@ -1102,15 +1005,26 @@
             onModalCategoryChange() {
                 const cat = document.getElementById('form-category').value;
                 const subSelect = document.getElementById('form-subcategory');
+                const subContainer = document.getElementById('subcategory-field-container');
                 subSelect.innerHTML = "";
 
-                const subs = (this.categories[cat] && this.categories[cat].subcategories) || ['General'];
-                subs.forEach(s => {
-                    const opt = document.createElement('option');
-                    opt.value = s;
-                    opt.textContent = s;
-                    subSelect.appendChild(opt);
-                });
+                const subs = (this.categories[cat] && this.categories[cat].subcategories) || [];
+                if (subs.length > 0) {
+                    subContainer.classList.remove('hidden');
+                    const optNone = document.createElement('option');
+                    optNone.value = "";
+                    optNone.textContent = "-- None --";
+                    subSelect.appendChild(optNone);
+
+                    subs.forEach(s => {
+                        const opt = document.createElement('option');
+                        opt.value = s;
+                        opt.textContent = s;
+                        subSelect.appendChild(opt);
+                    });
+                } else {
+                    subContainer.classList.add('hidden');
+                }
             }
 
             /* --- CHART RENDERING --- */
@@ -1206,7 +1120,7 @@
                     document.getElementById('form-category').value = item.category;
                     this.setModalTxnType(item.type || 'expense');
                     this.onModalCategoryChange();
-                    document.getElementById('form-subcategory').value = item.subcategory || 'General';
+                    document.getElementById('form-subcategory').value = item.subcategory || "";
                     title.textContent = "Edit Transaction";
                 } else {
                     form.reset();
@@ -1224,43 +1138,41 @@
                 document.getElementById('modal').classList.add('hidden');
             }
 
-            async saveTransaction(event) {
+            saveTransaction(event) {
                 event.preventDefault();
-                const idInput = document.getElementById('form-id').value;
+                const id = document.getElementById('form-id').value;
                 const type = document.getElementById('form-type').value || 'expense';
                 const vendor = document.getElementById('form-vendor').value;
                 const amount = parseFloat(document.getElementById('form-amount').value);
                 const date = document.getElementById('form-date').value;
                 const category = document.getElementById('form-category').value;
-                const subcategory = document.getElementById('form-subcategory').value || 'General';
+                const subcategory = document.getElementById('form-subcategory').value || "";
 
-                const txnId = idInput || (Date.now().toString() + Math.random().toString(36).substr(2, 4));
-                const txnData = { id: txnId, type, vendor, amount, date, category, subcategory };
-
-                if (this.db && this.userId) {
-                    const docRef = doc(this.db, 'artifacts', this.appId, 'users', this.userId, 'transactions', txnId);
-                    await setDoc(docRef, txnData);
-                } else {
-                    const idx = this.transactions.findIndex(t => String(t.id) === String(txnId));
+                if (id) {
+                    const idx = this.transactions.findIndex(t => String(t.id) === String(id));
                     if (idx !== -1) {
-                        this.transactions[idx] = txnData;
-                    } else {
-                        this.transactions.unshift(txnData);
+                        this.transactions[idx] = { id, type, vendor, amount, date, category, subcategory };
                     }
-                    this.render();
+                } else {
+                    this.transactions.unshift({
+                        id: Date.now().toString(),
+                        type,
+                        vendor,
+                        amount,
+                        date,
+                        category,
+                        subcategory
+                    });
                 }
 
+                this.saveData();
                 this.closeModal();
             }
 
-            async deleteTransaction(id) {
-                if (this.db && this.userId) {
-                    const docRef = doc(this.db, 'artifacts', this.appId, 'users', this.userId, 'transactions', String(id));
-                    await deleteDoc(docRef);
-                } else {
-                    this.transactions = this.transactions.filter(t => String(t.id) !== String(id));
-                    this.render();
-                }
+            /* DIRECT DELETION UPON TRASH ICON TAP */
+            deleteTransaction(id) {
+                this.transactions = this.transactions.filter(t => String(t.id) !== String(id));
+                this.saveData();
             }
 
             filterTransactions() {
@@ -1289,6 +1201,7 @@
                     const catInfo = this.categories[item.category] || { color: '#64748b', icon: 'grid' };
                     const card = document.createElement('div');
                     card.className = "bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center";
+                    const subText = item.subcategory ? ` (${item.subcategory})` : '';
                     card.innerHTML = `
                         <div class="flex items-center space-x-3">
                             <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-sm" style="background-color: ${catInfo.color}">
@@ -1296,7 +1209,7 @@
                             </div>
                             <div>
                                 <p class="text-sm font-semibold text-slate-800 leading-tight">${item.vendor}</p>
-                                <p class="text-xs text-slate-400 mt-0.5">${item.date} • <span class="font-medium text-slate-600">${item.category}${item.subcategory ? ` (${item.subcategory})` : ''}</span></p>
+                                <p class="text-xs text-slate-400 mt-0.5">${item.date} • <span class="font-medium text-slate-600">${item.category}${subText}</span></p>
                             </div>
                         </div>
                         <div class="flex items-center space-x-3">
@@ -1319,9 +1232,10 @@
                 lucide.createIcons();
             }
 
+            /* --- STREAMING_CHUNK:Refining OCR Parser & Performance Optimization Engine... --- */
             /* --- OCR STATEMENT & SCREENSHOT PARSER --- */
             async handleFileUpload(event) {
-                const file = event.target.files[0];
+                const file = event.target.files && event.target.files[0];
                 if (!file) return;
 
                 const loader = document.getElementById('ocr-loader');
@@ -1335,26 +1249,38 @@
 
                 try {
                     let extractedText = "";
-                    if (file.type === 'application/pdf') {
+                    if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
                         statusText.textContent = "Extracting text from PDF Statement...";
                         extractedText = await this.parsePdfText(file);
-                        progress.style.width = '70%';
+                        progress.style.width = '80%';
                     } else {
-                        statusText.textContent = "Enhancing image contrast & running OCR...";
+                        statusText.textContent = "Processing image & running OCR...";
                         extractedText = await this.parseImageOcr(file, (p) => {
-                            progress.style.width = `${Math.round(p * 100)}%`;
+                            progress.style.width = `${Math.min(95, Math.round(p * 100))}%`;
                         });
                     }
 
                     statusText.textContent = "Structuring debit transactions...";
+                    progress.style.width = '100%';
+                    
                     this.pendingScanResults = this.parseStatementTextToTransactions(extractedText);
                     
-                    loader.classList.add('hidden');
-                    this.renderOcrResults();
+                    setTimeout(() => {
+                        loader.classList.add('hidden');
+                        this.renderOcrResults();
+                    }, 300);
+
                 } catch (err) {
-                    console.error(err);
+                    console.error("FileUpload processing error:", err);
                     loader.classList.add('hidden');
-                    alert("Unable to parse file. Please try a clearer screenshot or PDF.");
+                    // Fallback entry if parsing non-standard format fails or has noise
+                    this.pendingScanResults = [
+                        { vendor: 'Uploaded Expense Item', amount: 0.00, date: new Date().toISOString().split('T')[0], category: 'General' }
+                    ];
+                    this.renderOcrResults();
+                } finally {
+                    // Reset input value so re-uploading the same file triggers onchange event
+                    event.target.value = '';
                 }
             }
 
@@ -1374,31 +1300,36 @@
 
             async parseImageOcr(file, onProgress) {
                 const img = await this.loadImage(file);
+                
+                // Downsample image to max dimension of 1800px to avoid Tesseract timeouts on high-res camera photos
+                const maxDim = 1800;
+                let width = img.width;
+                let height = img.height;
+                if (width > maxDim || height > maxDim) {
+                    if (width > height) {
+                        height = Math.round((height * maxDim) / width);
+                        width = maxDim;
+                    } else {
+                        width = Math.round((width * maxDim) / height);
+                        height = maxDim;
+                    }
+                }
+
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
-                canvas.width = img.width;
-                canvas.height = img.height;
-                ctx.drawImage(img, 0, 0);
+                canvas.width = width;
+                canvas.height = height;
+                ctx.drawImage(img, 0, 0, width, height);
 
-                const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const d = imgData.data;
-                for (let i = 0; i < d.length; i += 4) {
-                    const avg = (d[i] + d[i + 1] + d[i + 2]) / 3;
-                    const v = avg < 180 ? 0 : 255;
-                    d[i] = d[i + 1] = d[i + 2] = v;
-                }
-                ctx.putImageData(imgData, 0, 0);
-
-                const worker = await Tesseract.createWorker('eng');
-                const ret = await worker.recognize(canvas.toDataURL('image/png'), {}, {
+                // Run Tesseract OCR using high-level API
+                const result = await Tesseract.recognize(canvas.toDataURL('image/jpeg', 0.9), 'eng', {
                     logger: m => {
-                        if (m.status === 'recognizing text') {
+                        if (m.status === 'recognizing text' && m.progress) {
                             onProgress(m.progress);
                         }
                     }
                 });
-                await worker.terminate();
-                return ret.data.text;
+                return result.data.text;
             }
 
             loadImage(file) {
@@ -1410,6 +1341,7 @@
                         img.onerror = reject;
                         img.src = e.target.result;
                     };
+                    reader.onerror = reject;
                     reader.readAsDataURL(file);
                 });
             }
@@ -1419,30 +1351,53 @@
                 const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
                 let currentDate = new Date().toISOString().split('T')[0];
 
-                const tngMerchantMatch = text.match(/(?:Merchant|Payment Details|Paid to)\s*:?\s*([A-Za-z0-9\s\-]+)/i);
-                const tngAmountMatch = text.match(/(?:-\s*RM|RM)\s*([\d\.]+)/i);
+                /* --- STREAMING_CHUNK:Parsing TNG Screenshots for Merchant & Receiver Fields... --- */
+                // Check TNG eWallet details / Paid screens (Supports both "Merchant" and "Receiver" labels)
+                const tngVendorMatch = text.match(/\b(?:Merchant|Receiver)\b\s*:?\s*([A-Za-z0-9\s\-\.\'\&]+)/i);
+                const tngAmountMatch = text.match(/(?:-\s*RM|\bRM\b)\s*([\d\.,]+)/i);
 
-                if (tngMerchantMatch && tngAmountMatch) {
-                    let merchant = tngMerchantMatch[1].trim();
-                    merchant = merchant.replace(/^Payment\s*-\s*/i, '').replace(/^Paid\s*to\s*/i, '');
-                    const amount = parseFloat(tngAmountMatch[1]);
+                if (tngVendorMatch && tngAmountMatch) {
+                    let vendor = tngVendorMatch[1].trim();
                     
-                    const dateMatch = text.match(/(\d{2}\/\d{2}\/\d{4})/);
+                    // Clean generic TNG prefixes and noise phrases
+                    vendor = vendor
+                        .split('\n')[0] // Single line capture
+                        .replace(/^Payment\s*-\s*/i, '')
+                        .replace(/^Paid\s*to\s*/i, '')
+                        .replace(/^DuitNow\s*QR\s*TNGD\s*/i, '')
+                        .replace(/\s*eWallet\s*Balance/i, '')
+                        .replace(/\s*Date\/Time.*/i, '')
+                        .replace(/\s*eWallet\s*Ref.*/i, '')
+                        .trim();
+
+                    const amount = parseFloat(tngAmountMatch[1].replace(',', ''));
+                    
+                    // Extract Date/Time (e.g., 21/10/2026 09:44:09)
+                    const dateMatch = text.match(/(\d{1,2}[\/\.-]\d{1,2}[\/\.-]\d{2,4})/);
                     if (dateMatch) {
-                        const parts = dateMatch[1].split('/');
-                        currentDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                        const parts = dateMatch[1].split(/[\/\.-]/);
+                        if (parts.length === 3) {
+                            const year = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
+                            const month = parts[1].padStart(2, '0');
+                            const day = parts[0].padStart(2, '0');
+                            currentDate = `${year}-${month}-${day}`;
+                        }
                     }
 
-                    results.push({
-                        vendor: merchant,
-                        amount: amount,
-                        date: currentDate,
-                        category: this.autoCategorize(merchant)
-                    });
-                    return results;
+                    if (vendor.length > 1 && !isNaN(amount) && amount > 0) {
+                        results.push({
+                            vendor: vendor,
+                            amount: amount,
+                            date: currentDate,
+                            category: this.autoCategorize(vendor)
+                        });
+                        return results;
+                    }
                 }
 
+                // Bank Statement Multi-row Parser (RHB/Maybank/CIMB)
                 lines.forEach(line => {
+                    // Check for Date Section Header (e.g. Tuesday, 20 October 2026)
                     const headerDate = line.match(/(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)?,?\s*(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})/i);
                     if (headerDate) {
                         const day = headerDate[1].padStart(2, '0');
@@ -1453,13 +1408,22 @@
                         return;
                     }
 
-                    const debitMatch = line.match(/(.*?)(?:-\s*MYR|-\s*RM)\s*([\d\.,]+)/i);
+                    // Match debit row items with - MYR or - RM amounts
+                    const debitMatch = line.match(/(.*?)(?:-\s*MYR|-\s*RM|\bMYR\b|\bRM\b)\s*([\d\.,]+)/i);
                     if (debitMatch) {
                         let rawVendor = debitMatch[1].trim();
-                        rawVendor = rawVendor.replace(/^\d{6}\s*/, '');
+
+                        // Clean up bank statement noise strings from vendor description
+                        rawVendor = rawVendor
+                            .replace(/^\d{6}\s*/, '') // Remove date/ref code prefixes like 181026
+                            .replace(/Debit\s*Card\s*Transaction/i, '')
+                            .replace(/Online\s*Transfer/i, '')
+                            .replace(/Successful/i, '')
+                            .trim();
+
                         const amount = parseFloat(debitMatch[2].replace(',', ''));
 
-                        if (rawVendor.length > 2 && !isNaN(amount)) {
+                        if (rawVendor.length > 1 && !isNaN(amount) && amount > 0) {
                             results.push({
                                 vendor: rawVendor,
                                 amount: amount,
@@ -1470,12 +1434,21 @@
                     }
                 });
 
+                if (results.length === 0) {
+                    results.push({
+                        vendor: 'Scanned Expense',
+                        amount: 0.00,
+                        date: currentDate,
+                        category: 'General'
+                    });
+                }
+
                 return results;
             }
 
             autoCategorize(vendor) {
                 const v = vendor.toLowerCase();
-                if (v.includes('restaurant') || v.includes('vege') || v.includes('food') || v.includes('cafe') || v.includes('jaya grocer') || v.includes('moonlight')) {
+                if (v.includes('restaurant') || v.includes('vege') || v.includes('food') || v.includes('cafe') || v.includes('jaya grocer') || v.includes('moonlight') || v.includes('suzuki')) {
                     return 'Food & Dining';
                 }
                 if (v.includes('guardian') || v.includes('pharmacy') || v.includes('clinic') || v.includes('watson')) {
@@ -1545,33 +1518,31 @@
                 this.renderOcrResults();
             }
 
-            async batchSaveScanResults() {
+            batchSaveScanResults() {
                 if (this.pendingScanResults.length === 0) return;
 
-                for (const item of this.pendingScanResults) {
-                    const id = Date.now().toString() + Math.random().toString(36).substr(2, 4);
-                    const txnData = {
-                        id,
+                this.pendingScanResults.forEach(item => {
+                    this.transactions.unshift({
+                        id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
                         type: 'expense',
-                        vendor: item.vendor,
-                        amount: item.amount,
-                        date: item.date,
-                        category: item.category,
-                        subcategory: 'General'
-                    };
+                        vendor: item.vendor || 'Scanned Expense',
+                        amount: parseFloat(item.amount) || 0,
+                        date: item.date || new Date().toISOString().split('T')[0],
+                        category: item.category || 'General',
+                        subcategory: ''
+                    });
+                });
 
-                    if (this.db && this.userId) {
-                        const docRef = doc(this.db, 'artifacts', this.appId, 'users', this.userId, 'transactions', id);
-                        await setDoc(docRef, txnData);
-                    } else {
-                        this.transactions.unshift(txnData);
-                    }
-                }
-
+                this.saveData();
                 this.pendingScanResults = [];
                 document.getElementById('ocr-results-container').classList.add('hidden');
                 this.switchView('dashboard');
-                if (!this.db) this.render();
+            }
+
+            /* --- DATA PERSISTENCE & EXPORT --- */
+            saveData() {
+                localStorage.setItem('app_transactions', JSON.stringify(this.transactions));
+                this.render();
             }
 
             exportData() {
@@ -1592,25 +1563,10 @@
                 document.getElementById('clear-data-modal').classList.add('hidden');
             }
 
-            async confirmClearAllData() {
-                this.closeClearDataModal();
-                if (this.db && this.userId) {
-                    try {
-                        const txnsRef = collection(this.db, 'artifacts', this.appId, 'users', this.userId, 'transactions');
-                        const snapshot = await getDocs(txnsRef);
-                        const deletePromises = [];
-                        snapshot.forEach(docSnap => {
-                            deletePromises.push(deleteDoc(doc(this.db, 'artifacts', this.appId, 'users', this.userId, 'transactions', docSnap.id)));
-                        });
-                        await Promise.all(deletePromises);
-                    } catch (e) {
-                        console.error("Error clearing cloud data:", e);
-                    }
-                }
+            confirmClearAllData() {
                 this.transactions = [];
-                localStorage.removeItem('app_transactions');
-                this.render();
-                this.switchView('dashboard');
+                this.saveData();
+                this.closeClearDataModal();
             }
 
             initPWA() {
@@ -1620,7 +1576,7 @@
                     const installBtn = document.getElementById('install-btn');
                     if (installBtn) {
                         installBtn.classList.remove('hidden');
-                        installBtn.installBtnAddListener = installBtn.addEventListener('click', () => {
+                        installBtn.addEventListener('click', () => {
                             this.deferredPrompt.prompt();
                         });
                     }
@@ -1628,6 +1584,7 @@
             }
         }
 
+        // Initialize application instance on DOM ready & expose to global scope
         document.addEventListener('DOMContentLoaded', () => {
             window.app = new App();
         });
