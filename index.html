@@ -211,18 +211,37 @@
                     <span class="text-xs font-semibold bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-lg" id="txn-list-count">0 items</span>
                 </div>
 
-                <!-- Search & Category Filters -->
-                <div class="flex gap-2">
-                    <div class="relative flex-1">
-                        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
-                        <input type="text" id="txn-search" oninput="window.app.filterTransactions()" placeholder="Search merchant..." class="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <!-- Search, Category & Month Filters -->
+                <div class="space-y-2">
+                    <div class="flex gap-2">
+                        <div class="relative flex-1">
+                            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
+                            <input type="text" id="txn-search" oninput="window.app.filterTransactions()" placeholder="Search merchant..." class="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <select id="txn-category-filter" onchange="window.app.filterTransactions()" class="text-xs bg-white border border-slate-200 rounded-xl px-2 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-600 max-w-[130px]">
+                            <!-- Populated dynamically -->
+                        </select>
                     </div>
-                    <select id="txn-category-filter" onchange="window.app.filterTransactions()" class="text-xs bg-white border border-slate-200 rounded-xl px-2 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium text-slate-600">
-                        <!-- Populated dynamically -->
-                    </select>
+
+                    <!-- Month Filter Bar -->
+                    <div class="flex items-center justify-between bg-white p-2 rounded-2xl border border-slate-200">
+                        <div class="flex items-center gap-1.5 text-slate-500 text-xs font-semibold">
+                            <i data-lucide="calendar" class="w-4 h-4 text-indigo-600"></i>
+                            <span>Period:</span>
+                        </div>
+                        <select id="txn-month-filter" onchange="window.app.filterTransactions()" class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-indigo-700">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
                 </div>
 
-                <!-- Expense Items Feed -->
+                <!-- Monthly Total Summary Card -->
+                <div id="monthly-summary-banner" class="bg-indigo-50 border border-indigo-100 p-3 rounded-2xl flex justify-between items-center text-xs font-semibold text-indigo-900 hidden">
+                    <span id="monthly-summary-label">October 2026 Total:</span>
+                    <span id="monthly-summary-amount" class="text-sm font-extrabold text-indigo-700">RM 0.00</span>
+                </div>
+
+                <!-- Expense Items Feed (Grouped by Date) -->
                 <div id="transactions-feed" class="space-y-2">
                     <!-- Dynamic transactions loaded here -->
                 </div>
@@ -996,30 +1015,44 @@
                         filterCat.appendChild(opt);
                     });
                 }
+
+                this.renderMonthDropdown();
             }
 
-            onModalCategoryChange() {
-                const cat = document.getElementById('form-category').value;
-                const subSelect = document.getElementById('form-subcategory');
-                const subContainer = document.getElementById('subcategory-field-container');
-                subSelect.innerHTML = "";
+            renderMonthDropdown() {
+                const monthSelect = document.getElementById('txn-month-filter');
+                if (!monthSelect) return;
 
-                const subs = (this.categories[cat] && this.categories[cat].subcategories) || [];
-                if (subs.length > 0) {
-                    subContainer.classList.remove('hidden');
-                    const optNone = document.createElement('option');
-                    optNone.value = "";
-                    optNone.textContent = "-- None --";
-                    subSelect.appendChild(optNone);
+                const currentValue = monthSelect.value || 'ALL';
+                monthSelect.innerHTML = `<option value="ALL">All Months</option>`;
 
-                    subs.forEach(s => {
-                        const opt = document.createElement('option');
-                        opt.value = s;
-                        opt.textContent = s;
-                        subSelect.appendChild(opt);
-                    });
+                // Extract all unique YYYY-MM periods from transactions
+                const monthsSet = new Set();
+                this.transactions.forEach(t => {
+                    if (t.date && t.date.length >= 7) {
+                        monthsSet.add(t.date.substring(0, 7)); // e.g. "2026-10"
+                    }
+                });
+
+                // Sort months descending (newest first)
+                const sortedMonths = Array.from(monthsSet).sort((a, b) => b.localeCompare(a));
+
+                sortedMonths.forEach(mStr => {
+                    const [yr, mo] = mStr.split('-');
+                    const dateObj = new Date(parseInt(yr), parseInt(mo) - 1, 1);
+                    const monthLabel = dateObj.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }); // e.g. "Oct 2026"
+                    
+                    const opt = document.createElement('option');
+                    opt.value = mStr;
+                    opt.textContent = monthLabel;
+                    monthSelect.appendChild(opt);
+                });
+
+                // Preserve previous selection if valid
+                if (Array.from(monthSelect.options).some(o => o.value === currentValue)) {
+                    monthSelect.value = currentValue;
                 } else {
-                    subContainer.classList.add('hidden');
+                    monthSelect.value = 'ALL';
                 }
             }
 
@@ -1174,55 +1207,137 @@
             filterTransactions() {
                 const search = document.getElementById('txn-search').value.toLowerCase();
                 const category = document.getElementById('txn-category-filter').value;
-                this.renderTransactionsFeed(search, category);
+                const month = document.getElementById('txn-month-filter') ? document.getElementById('txn-month-filter').value : 'ALL';
+                this.renderTransactionsFeed(search, category, month);
             }
 
-            renderTransactionsFeed(filterSearch = '', filterCat = 'ALL') {
+            renderTransactionsFeed(filterSearch = '', filterCat = 'ALL', filterMonth = 'ALL') {
                 const feed = document.getElementById('transactions-feed');
                 feed.innerHTML = "";
 
                 const filtered = this.transactions.filter(t => {
                     const matchesSearch = t.vendor.toLowerCase().includes(filterSearch);
                     const matchesCat = filterCat === 'ALL' || t.category === filterCat;
-                    return matchesSearch && matchesCat;
+                    const matchesMonth = filterMonth === 'ALL' || (t.date && t.date.startsWith(filterMonth));
+                    return matchesSearch && matchesCat && matchesMonth;
                 });
 
+                // Update Monthly Summary Banner
+                const summaryBanner = document.getElementById('monthly-summary-banner');
+                const summaryLabel = document.getElementById('monthly-summary-label');
+                const summaryAmount = document.getElementById('monthly-summary-amount');
+
+                if (filterMonth !== 'ALL' && summaryBanner) {
+                    const [yr, mo] = filterMonth.split('-');
+                    const dateObj = new Date(parseInt(yr), parseInt(mo) - 1, 1);
+                    const monthFull = dateObj.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                    
+                    const monthExpenseTotal = filtered.reduce((acc, curr) => {
+                        const amt = parseFloat(curr.amount) || 0;
+                        return curr.type === 'income' ? acc : acc + amt;
+                    }, 0);
+
+                    summaryLabel.textContent = `${monthFull} Total Expenses:`;
+                    summaryAmount.textContent = this.formatCurrency(monthExpenseTotal);
+                    summaryBanner.classList.remove('hidden');
+                } else if (summaryBanner) {
+                    summaryBanner.classList.add('hidden');
+                }
+
                 if (filtered.length === 0) {
-                    feed.innerHTML = `<div class="text-center py-8 text-xs text-slate-400">No expense records found.</div>`;
+                    feed.innerHTML = `<div class="text-center py-8 text-xs text-slate-400">No expense records found for this period.</div>`;
                     return;
                 }
 
+                /* --- STREAMING_CHUNK:Grouping Expenses History by Date... --- */
+                // Group transactions by Date (YYYY-MM-DD)
+                const groupedByDate = {};
                 filtered.forEach(item => {
-                    const isIncome = item.type === 'income';
-                    const catInfo = this.categories[item.category] || { color: '#64748b', icon: 'grid' };
-                    const card = document.createElement('div');
-                    card.className = "bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center";
-                    const subText = item.subcategory ? ` (${item.subcategory})` : '';
-                    card.innerHTML = `
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-sm" style="background-color: ${catInfo.color}">
-                                <i data-lucide="${catInfo.icon || 'folder'}" class="w-5 h-5"></i>
-                            </div>
-                            <div>
-                                <p class="text-sm font-semibold text-slate-800 leading-tight">${item.vendor}</p>
-                                <p class="text-xs text-slate-400 mt-0.5">${item.date} • <span class="font-medium text-slate-600">${item.category}${subText}</span></p>
-                            </div>
+                    const d = item.date || 'Unknown Date';
+                    if (!groupedByDate[d]) {
+                        groupedByDate[d] = [];
+                    }
+                    groupedByDate[d].push(item);
+                });
+
+                // Sort dates in descending order (newest date first)
+                const sortedDates = Object.keys(groupedByDate).sort((a, b) => new Date(b) - new Date(a));
+
+                sortedDates.forEach(dateStr => {
+                    const dateItems = groupedByDate[dateStr];
+                    
+                    // Calculate day's net/total spending
+                    const dayTotal = dateItems.reduce((acc, curr) => {
+                        const amt = parseFloat(curr.amount) || 0;
+                        return curr.type === 'income' ? acc + amt : acc - amt;
+                    }, 0);
+
+                    // Formatted Human-Friendly Date Header (e.g. Thu, 22 Oct 2026)
+                    let formattedDateHeader = dateStr;
+                    try {
+                        const dateObj = new Date(dateStr + 'T00:00:00');
+                        formattedDateHeader = dateObj.toLocaleDateString('en-GB', {
+                            weekday: 'short',
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric'
+                        });
+                    } catch (e) {
+                        formattedDateHeader = dateStr;
+                    }
+
+                    // Date Header Element
+                    const groupSection = document.createElement('div');
+                    groupSection.className = "space-y-2 pt-2";
+
+                    const isPositiveDay = dayTotal >= 0;
+                    const dayTotalFormatted = `${isPositiveDay ? '+' : '-'}${this.formatCurrency(Math.abs(dayTotal))}`;
+
+                    groupSection.innerHTML = `
+                        <div class="flex justify-between items-center px-1 pb-1 border-b border-slate-200/60 text-xs">
+                            <span class="font-bold text-slate-700">${formattedDateHeader}</span>
+                            <span class="font-bold text-slate-500 text-[11px]">${dayTotalFormatted}</span>
                         </div>
-                        <div class="flex items-center space-x-3">
-                            <span class="text-sm font-extrabold ${isIncome ? 'text-emerald-600' : 'text-slate-800'}">
-                                ${isIncome ? '+' : '-'}${this.formatCurrency(item.amount)}
-                            </span>
-                            <div class="flex space-x-1">
-                                <button type="button" onclick="window.app.openModal('${item.id}')" class="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-slate-50 transition">
-                                    <i data-lucide="pencil" class="w-4 h-4"></i>
-                                </button>
-                                <button type="button" onclick="window.app.deleteTransaction('${item.id}')" class="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-slate-50 transition">
-                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                </button>
-                            </div>
-                        </div>
+                        <div class="space-y-2" id="date-group-${dateStr}"></div>
                     `;
-                    feed.appendChild(card);
+
+                    feed.appendChild(groupSection);
+
+                    const groupContainer = groupSection.querySelector(`#date-group-${dateStr}`);
+
+                    // Render individual transaction cards under this date group
+                    dateItems.forEach(item => {
+                        const isIncome = item.type === 'income';
+                        const catInfo = this.categories[item.category] || { color: '#64748b', icon: 'grid' };
+                        const card = document.createElement('div');
+                        card.className = "bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center";
+                        const subText = item.subcategory ? ` (${item.subcategory})` : '';
+                        card.innerHTML = `
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-sm" style="background-color: ${catInfo.color}">
+                                    <i data-lucide="${catInfo.icon || 'folder'}" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-semibold text-slate-800 leading-tight">${item.vendor}</p>
+                                    <p class="text-xs text-slate-400 mt-0.5"><span class="font-medium text-slate-600">${item.category}${subText}</span></p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <span class="text-sm font-extrabold ${isIncome ? 'text-emerald-600' : 'text-slate-800'}">
+                                    ${isIncome ? '+' : '-'}${this.formatCurrency(item.amount)}
+                                </span>
+                                <div class="flex space-x-1">
+                                    <button type="button" onclick="window.app.openModal('${item.id}')" class="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-slate-50 transition">
+                                        <i data-lucide="pencil" class="w-4 h-4"></i>
+                                    </button>
+                                    <button type="button" onclick="window.app.deleteTransaction('${item.id}')" class="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-slate-50 transition">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        groupContainer.appendChild(card);
+                    });
                 });
 
                 lucide.createIcons();
