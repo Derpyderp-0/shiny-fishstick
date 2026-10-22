@@ -314,10 +314,10 @@
                                     <i data-lucide="cloud" class="w-4 h-4 text-indigo-600"></i>
                                     Cloud Real-Time Sync
                                 </p>
-                                <p class="text-xs text-slate-400">Connected & Locked to Secure Firebase Cloud (<span class="font-mono text-indigo-600">personal-use-385b5</span>)</p>
+                                <p class="text-xs text-slate-400">Connected & Secured to Firebase Cloud (<span class="font-mono text-indigo-600">personal-use-385b5</span>)</p>
                             </div>
                             <span class="text-[10px] font-bold bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full border border-emerald-200 flex items-center gap-1">
-                                <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Secured
+                                <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Active
                             </span>
                         </div>
                     </div>
@@ -560,7 +560,7 @@
             'General': { color: '#64748b', icon: 'grid', subcategories: [] }
         };
 
-        // Secure, locked Firebase Project configuration (immutable)
+        // Secure hardcoded Firebase Project configuration
         const SECURE_FIREBASE_CONFIG = {
             apiKey: "AIzaSyDtg4qSodMbwevQvu9ECpb8S-WvxE6UKik",
             authDomain: "personal-use-385b5.firebaseapp.com",
@@ -584,8 +584,6 @@
                 this.pendingScanResults = [];
                 this.chartInstance = null;
                 this.deferredPrompt = null;
-
-                // Firebase Real-time Cloud Sync properties
                 this.db = null;
 
                 this.initPWA();
@@ -595,7 +593,7 @@
                 this.render();
             }
 
-            /* --- SECURE FIREBASE REAL-TIME CLOUD SYNC --- */
+            /* --- SECURE FIREBASE REAL-TIME CLOUD SYNC & 1-HOUR REFRESH --- */
             initFirebaseSync() {
                 try {
                     if (!firebase.apps.length) {
@@ -603,14 +601,23 @@
                     }
                     this.db = firebase.firestore();
 
-                    // Real-time listener: changes on phone or laptop immediately reflect here!
-                    this.db.collection('expenses').orderBy('date', 'desc').onSnapshot((snapshot) => {
-                        const cloudItems = [];
+                    // 1. Real-time listener: instant cross-device updates using timestamp reconciliation
+                    this.db.collection('expenses').onSnapshot((snapshot) => {
+                        const cloudMap = new Map();
+                        
+                        // Load current local transactions into map
+                        this.transactions.forEach(t => cloudMap.set(String(t.id), t));
+
                         snapshot.forEach((doc) => {
-                            cloudItems.push({ id: doc.id, ...doc.data() });
+                            const cloudItem = { id: doc.id, ...doc.data() };
+                            const existing = cloudMap.get(String(cloudItem.id));
+
+                            if (!existing || (cloudItem.updatedAt || 0) >= (existing.updatedAt || 0)) {
+                                cloudMap.set(String(cloudItem.id), cloudItem);
+                            }
                         });
 
-                        this.transactions = cloudItems;
+                        this.transactions = Array.from(cloudMap.values()).sort((a, b) => new Date(b.date) - new Date(a.date));
                         localStorage.setItem('app_transactions', JSON.stringify(this.transactions));
                         this.updateCloudBadge(true);
                         this.render();
@@ -618,18 +625,49 @@
                         console.error("Firestore sync listener error:", err);
                         this.updateCloudBadge(false);
                     });
+
+                    // 2. Periodic 1-Hour Background Refresh Timer (Every 60 mins)
+                    setInterval(() => {
+                        this.refreshCloudData();
+                    }, 60 * 60 * 1000);
+
                 } catch (e) {
                     console.error("Firebase init error:", e);
                     this.updateCloudBadge(false);
                 }
             }
 
+            refreshCloudData() {
+                if (!this.db) return;
+                this.db.collection('expenses').get().then((snapshot) => {
+                    const cloudMap = new Map();
+                    this.transactions.forEach(t => cloudMap.set(String(t.id), t));
+
+                    snapshot.forEach((doc) => {
+                        const cloudItem = { id: doc.id, ...doc.data() };
+                        const existing = cloudMap.get(String(cloudItem.id));
+                        if (!existing || (cloudItem.updatedAt || 0) >= (existing.updatedAt || 0)) {
+                            cloudMap.set(String(cloudItem.id), cloudItem);
+                        }
+                    });
+
+                    this.transactions = Array.from(cloudMap.values()).sort((a, b) => new Date(b.date) - new Date(a.date));
+                    localStorage.setItem('app_transactions', JSON.stringify(this.transactions));
+                    this.updateCloudBadge(true);
+                    this.render();
+                }).catch(err => {
+                    console.error("Periodic 1-hour refresh error:", err);
+                });
+            }
+
             updateCloudBadge(isConnected) {
                 const badge = document.getElementById('cloud-sync-badge');
-                if (isConnected) {
-                    if (badge) badge.classList.remove('hidden');
-                } else {
-                    if (badge) badge.classList.add('hidden');
+                if (badge) {
+                    if (isConnected) {
+                        badge.classList.remove('hidden');
+                    } else {
+                        badge.classList.add('hidden');
+                    }
                 }
             }
 
@@ -1285,8 +1323,9 @@
                 const date = document.getElementById('form-date').value;
                 const category = document.getElementById('form-category').value;
                 const subcategory = document.getElementById('form-subcategory').value || "";
+                const updatedAt = Date.now();
 
-                const txnObj = { id, type, vendor, amount, date, category, subcategory };
+                const txnObj = { id, type, vendor, amount, date, category, subcategory, updatedAt };
 
                 if (this.db) {
                     this.db.collection('expenses').doc(id).set(txnObj).then(() => {
@@ -1316,13 +1355,10 @@
                 if (this.db) {
                     this.db.collection('expenses').doc(id).delete().catch(err => {
                         console.error("Firestore delete error:", err);
-                        this.transactions = this.transactions.filter(t => String(t.id) !== String(id));
-                        this.saveData();
                     });
-                } else {
-                    this.transactions = this.transactions.filter(t => String(t.id) !== String(id));
-                    this.saveData();
                 }
+                this.transactions = this.transactions.filter(t => String(t.id) !== String(id));
+                this.saveData();
             }
 
             filterTransactions() {
@@ -1456,7 +1492,7 @@
                 lucide.createIcons();
             }
 
-            /* --- OCR STATEMENT & SCREENSHOT PARSER --- */
+            /* --- OCR STATEMENT & SCREENSHOT PARSER WITH CONTRAST BOOST --- */
             async handleFileUpload(event) {
                 const files = event.target.files;
                 if (!files || files.length === 0) return;
@@ -1777,7 +1813,7 @@
 
             autoCategorize(vendor) {
                 const v = vendor.toLowerCase();
-                if (v.includes('restaurant') || v.includes('vege') || v.includes('food') || v.includes('cafe') || v.includes('jaya grocer') || v.includes('moonlight') || v.includes('suzuki') || v.includes('grabfood') || v.includes('mcdonald')) {
+                if (v.includes('restaurant') || v.includes('vege') || v.includes('food') || v.includes('cafe') || v.includes('jaya grocer') || v.includes('moonlight') || v.includes('suzuki') || v.includes('grabfood') || v.includes('mcdonald') || v.includes('restoran')) {
                     return 'Food & Dining';
                 }
                 if (v.includes('guardian') || v.includes('pharmacy') || v.includes('clinic') || v.includes('watson')) {
@@ -1852,6 +1888,7 @@
 
                 this.pendingScanResults.forEach(item => {
                     const id = Date.now().toString() + Math.random().toString(36).substr(2, 4);
+                    const updatedAt = Date.now();
                     const txnObj = {
                         id: id,
                         type: 'expense',
@@ -1859,7 +1896,8 @@
                         amount: parseFloat(item.amount) || 0,
                         date: item.date || new Date().toISOString().split('T')[0],
                         category: item.category || 'General',
-                        subcategory: ''
+                        subcategory: '',
+                        updatedAt: updatedAt
                     };
 
                     if (this.db) {
@@ -1926,6 +1964,8 @@
                         if (lines.length <= 1) return;
 
                         const importedItems = [];
+                        const updatedAt = Date.now();
+
                         for (let i = 1; i < lines.length; i++) {
                             const row = this.parseCsvRow(lines[i]);
                             if (row.length >= 6) {
@@ -1938,7 +1978,7 @@
 
                                 if (vendor && !isNaN(amount) && amount > 0) {
                                     const id = Date.now().toString() + Math.random().toString(36).substr(2, 4);
-                                    const txnObj = { id, date: date || new Date().toISOString().split('T')[0], type, vendor, category, subcategory, amount };
+                                    const txnObj = { id, date: date || new Date().toISOString().split('T')[0], type, vendor, category, subcategory, amount, updatedAt };
 
                                     if (this.db) {
                                         this.db.collection('expenses').doc(id).set(txnObj);
