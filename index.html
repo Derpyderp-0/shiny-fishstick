@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Smart Expense Tracker</title>
+    <title>Smart Expense Tracker PWA</title>
     <!-- PWA Manifest & Theme Color -->
     <meta name="theme-color" content="#4f46e5">
-    <meta name="description" content="Offline- Smart Expense Tracker PWA">
+    <meta name="description" content="Offline-first Smart Expense Tracker PWA with Receipt Scanning & Bank Statement Parser OCR">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2845/2845722.png">
     
     <!-- Tailwind CSS -->
@@ -237,12 +237,12 @@
                     <h2 class="text-base font-bold text-slate-800">Scan your transaction to Record!</h2>
                     <p class="text-xs text-slate-500 mt-1 max-w-xs mx-auto">Upload bank statements, eWallet screenshots, or receipts to automatically extract transactions.</p>
 
-                    <!-- Consolidated Single Upload Input -->
+                    <!-- Consolidated Single / Multi Upload Input -->
                     <div class="mt-5 max-w-xs mx-auto">
                         <label class="cursor-pointer bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold px-5 py-3.5 rounded-2xl shadow-md shadow-indigo-200 transition-all flex items-center justify-center gap-2.5">
                             <i data-lucide="file-up" class="w-4 h-4"></i>
                             <span>Upload Images / PDF</span>
-                            <input type="file" accept="image/*,application/pdf" class="hidden" onchange="window.app.handleFileUpload(event)">
+                            <input type="file" accept="image/*,application/pdf" multiple class="hidden" onchange="window.app.handleFileUpload(event)">
                         </label>
                     </div>
                 </div>
@@ -250,7 +250,7 @@
                 <!-- OCR Loader -->
                 <div id="ocr-loader" class="hidden bg-indigo-50/80 border border-indigo-100 rounded-3xl p-6 text-center space-y-3 backdrop-blur-sm">
                     <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent"></div>
-                    <p id="ocr-status-text" class="text-xs font-semibold text-indigo-900">Parsing Statement & Merchants...</p>
+                    <p id="ocr-status-text" class="text-xs font-semibold text-indigo-900">Parsing Statements & Screenshots...</p>
                     <div class="w-full bg-indigo-200/60 h-2 rounded-full overflow-hidden max-w-xs mx-auto">
                         <div id="ocr-progress" class="bg-indigo-600 h-full w-0 transition-all duration-300 rounded-full"></div>
                     </div>
@@ -295,9 +295,9 @@
                     <hr class="border-slate-100">
                     <div>
                         <p class="text-sm font-semibold">Export & Backup</p>
-                        <p class="text-xs text-slate-400 mb-2">Download raw JSON file of expenses</p>
-                        <button onclick="window.app.exportData()" class="w-full py-2.5 bg-slate-800 text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-2 hover:bg-slate-900 transition">
-                            <i data-lucide="download-cloud" class="w-4 h-4"></i> Export JSON Backup
+                        <p class="text-xs text-slate-400 mb-2.5">Download your ledger data as a CSV spreadsheet</p>
+                        <button onclick="window.app.exportToCsv()" class="w-full py-2.5 bg-emerald-600 text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 hover:bg-emerald-700 transition shadow-sm">
+                            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Export CSV Spreadsheet
                         </button>
                     </div>
                     <hr class="border-slate-100">
@@ -350,7 +350,7 @@
         </div>
 
         <!-- Hidden Global Input Trigger for OCR from FAB -->
-        <input type="file" id="fab-file-input" accept="image/*,application/pdf" class="hidden" onchange="window.app.handleFileUpload(event)">
+        <input type="file" id="fab-file-input" accept="image/*,application/pdf" multiple class="hidden" onchange="window.app.handleFileUpload(event)">
 
         <!-- BOTTOM NAVIGATION BAR -->
         <nav class="bg-white border-t border-slate-200 flex justify-around p-2 text-slate-400 font-medium text-xs relative z-20">
@@ -510,12 +510,8 @@
                 this.hideAmounts = localStorage.getItem('app_hide_amounts') === 'true';
                 this.categories = JSON.parse(localStorage.getItem('app_categories')) || DEFAULT_CATEGORIES;
 
-                this.transactions = JSON.parse(localStorage.getItem('app_transactions')) || [
-                    { id: '1', vendor: 'Jaya Grocer', type: 'expense', amount: 84.50, category: 'Food & Dining', subcategory: 'Groceries', date: '2026-10-22' },
-                    { id: '2', vendor: 'PETRONAS Fuel', type: 'expense', amount: 50.00, category: 'Transportation', subcategory: 'Fuel', date: '2026-10-21' },
-                    { id: '3', vendor: 'TNB Electricity Bill', type: 'expense', amount: 120.30, category: 'Utilities & Services', subcategory: 'Electricity', date: '2026-10-20' },
-                    { id: '4', vendor: 'Monthly Salary', type: 'income', amount: 4500.00, category: 'Income & Salary', subcategory: 'Salary', date: '2026-10-15' }
-                ];
+                // Default to empty array for fresh first-time use
+                this.transactions = JSON.parse(localStorage.getItem('app_transactions')) || [];
 
                 this.pendingScanResults = [];
                 this.chartInstance = null;
@@ -1232,11 +1228,10 @@
                 lucide.createIcons();
             }
 
-            /* --- STREAMING_CHUNK:Refining OCR Parser & Performance Optimization Engine... --- */
             /* --- OCR STATEMENT & SCREENSHOT PARSER --- */
             async handleFileUpload(event) {
-                const file = event.target.files && event.target.files[0];
-                if (!file) return;
+                const files = event.target.files;
+                if (!files || files.length === 0) return;
 
                 const loader = document.getElementById('ocr-loader');
                 const progress = document.getElementById('ocr-progress');
@@ -1245,25 +1240,37 @@
 
                 loader.classList.remove('hidden');
                 resultsContainer.classList.add('hidden');
-                progress.style.width = '20%';
+                progress.style.width = '10%';
+
+                const totalFiles = files.length;
+                let accumulatedTransactions = [];
 
                 try {
-                    let extractedText = "";
-                    if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-                        statusText.textContent = "Extracting text from PDF Statement...";
-                        extractedText = await this.parsePdfText(file);
-                        progress.style.width = '80%';
-                    } else {
-                        statusText.textContent = "Processing image & running OCR...";
-                        extractedText = await this.parseImageOcr(file, (p) => {
-                            progress.style.width = `${Math.min(95, Math.round(p * 100))}%`;
-                        });
+                    for (let i = 0; i < totalFiles; i++) {
+                        const file = files[i];
+                        statusText.textContent = totalFiles > 1 
+                            ? `Processing file ${i + 1} of ${totalFiles}: ${file.name}...`
+                            : `Processing ${file.name}...`;
+
+                        let extractedText = "";
+                        if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+                            extractedText = await this.parsePdfText(file);
+                        } else {
+                            extractedText = await this.parseImageOcr(file, (p) => {
+                                const currentFileProgress = ((i + p) / totalFiles) * 100;
+                                progress.style.width = `${Math.min(95, Math.round(currentFileProgress))}%`;
+                            });
+                        }
+
+                        const fileResults = this.parseStatementTextToTransactions(extractedText);
+                        accumulatedTransactions = accumulatedTransactions.concat(fileResults);
+
+                        const stepPercent = Math.round(((i + 1) / totalFiles) * 100);
+                        progress.style.width = `${stepPercent}%`;
                     }
 
-                    statusText.textContent = "Structuring debit transactions...";
-                    progress.style.width = '100%';
-                    
-                    this.pendingScanResults = this.parseStatementTextToTransactions(extractedText);
+                    statusText.textContent = "Structuring all transactions...";
+                    this.pendingScanResults = accumulatedTransactions;
                     
                     setTimeout(() => {
                         loader.classList.add('hidden');
@@ -1271,15 +1278,17 @@
                     }, 300);
 
                 } catch (err) {
-                    console.error("FileUpload processing error:", err);
+                    console.error("Batch file upload error:", err);
                     loader.classList.add('hidden');
-                    // Fallback entry if parsing non-standard format fails or has noise
-                    this.pendingScanResults = [
-                        { vendor: 'Uploaded Expense Item', amount: 0.00, date: new Date().toISOString().split('T')[0], category: 'General' }
-                    ];
+                    if (accumulatedTransactions.length > 0) {
+                        this.pendingScanResults = accumulatedTransactions;
+                    } else {
+                        this.pendingScanResults = [
+                            { vendor: 'Uploaded Expense Item', amount: 0.00, date: new Date().toISOString().split('T')[0], category: 'General' }
+                        ];
+                    }
                     this.renderOcrResults();
                 } finally {
-                    // Reset input value so re-uploading the same file triggers onchange event
                     event.target.value = '';
                 }
             }
@@ -1351,17 +1360,14 @@
                 const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
                 let currentDate = new Date().toISOString().split('T')[0];
 
-                /* --- STREAMING_CHUNK:Parsing TNG Screenshots for Merchant & Receiver Fields... --- */
-                // Check TNG eWallet details / Paid screens (Supports both "Merchant" and "Receiver" labels)
+                /* 1. Touch 'n Go (TNG) eWallet screenshots (Merchant or Receiver) */
                 const tngVendorMatch = text.match(/\b(?:Merchant|Receiver)\b\s*:?\s*([A-Za-z0-9\s\-\.\'\&]+)/i);
                 const tngAmountMatch = text.match(/(?:-\s*RM|\bRM\b)\s*([\d\.,]+)/i);
 
                 if (tngVendorMatch && tngAmountMatch) {
                     let vendor = tngVendorMatch[1].trim();
-                    
-                    // Clean generic TNG prefixes and noise phrases
                     vendor = vendor
-                        .split('\n')[0] // Single line capture
+                        .split('\n')[0]
                         .replace(/^Payment\s*-\s*/i, '')
                         .replace(/^Paid\s*to\s*/i, '')
                         .replace(/^DuitNow\s*QR\s*TNGD\s*/i, '')
@@ -1371,8 +1377,6 @@
                         .trim();
 
                     const amount = parseFloat(tngAmountMatch[1].replace(',', ''));
-                    
-                    // Extract Date/Time (e.g., 21/10/2026 09:44:09)
                     const dateMatch = text.match(/(\d{1,2}[\/\.-]\d{1,2}[\/\.-]\d{2,4})/);
                     if (dateMatch) {
                         const parts = dateMatch[1].split(/[\/\.-]/);
@@ -1395,9 +1399,111 @@
                     }
                 }
 
-                // Bank Statement Multi-row Parser (RHB/Maybank/CIMB)
+                /* 2. Grab / GrabFood Activity History Parser (Multi-row screenshots) */
+                const monthMap = { jan:'01', feb:'02', mar:'03', apr:'04', may:'05', jun:'06', jul:'07', aug:'08', sep:'09', oct:'10', nov:'11', dec:'12' };
+                
+                // Scan line-by-line for Grab merchant items
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+                    
+                    // Skip top-ups or generic non-expense lines
+                    if (/top-up|grabcoins|wallet balance|reorder|save group/i.test(line)) {
+                        continue;
+                    }
+
+                    // Look for line ending or accompanied by RM amount
+                    const amountMatch = line.match(/RM\s*([\d\.,]+)/i) || (lines[i+1] && lines[i+1].match(/^RM\s*([\d\.,]+)/i));
+                    
+                    if (amountMatch) {
+                        let vendor = line.replace(/RM\s*[\d\.,]+/i, '').trim();
+                        
+                        // If line was just vendor and amount was on next line
+                        if (!vendor && i > 0) {
+                            vendor = lines[i-1].trim();
+                        }
+
+                        // Look ahead for date line (e.g. 16 Oct 2026, 02:24 pm)
+                        let rowDate = currentDate;
+                        for (let j = i; j < Math.min(lines.length, i + 4); j++) {
+                            const dateMatch = lines[j].match(/(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(\d{4})/i);
+                            if (dateMatch) {
+                                const day = dateMatch[1].padStart(2, '0');
+                                const month = monthMap[dateMatch[2].toLowerCase().substring(0, 3)];
+                                const year = dateMatch[3];
+                                rowDate = `${year}-${month}-${day}`;
+                                break;
+                            }
+                        }
+
+                        const amount = parseFloat(amountMatch[1].replace(',', ''));
+                        
+                        // Clean up vendor name
+                        vendor = vendor
+                            .replace(/Group Order.*/i, '')
+                            .replace(/Save group.*/i, '')
+                            .replace(/Reorder.*/i, '')
+                            .trim();
+
+                        if (vendor.length > 2 && !/top-up|wallet/i.test(vendor) && !isNaN(amount) && amount > 0) {
+                            // Prevent duplicate entries from multi-line text matches
+                            if (!results.some(r => r.vendor === vendor && r.amount === amount && r.date === rowDate)) {
+                                results.push({
+                                    vendor: vendor,
+                                    amount: amount,
+                                    date: rowDate,
+                                    category: 'Food & Dining'
+                                });
+                            }
+                        }
+                    }
+                }
+
+                if (results.length > 0) {
+                    return results;
+                }
+
+                /* 3. Shopee / ShopeePay Order Details Parser */
+                const shopeeMatch = text.match(/(?:Seller|Shop|Order Details|Paid to)\s*:?\s*([A-Za-z0-9\s\-\.\'\&]+)/i);
+                const shopeeAmount = text.match(/(?:Order Total|Total Payment|Amount Paid|RM)\s*:?\s*RM?\s*([\d\.,]+)/i);
+                if (text.toLowerCase().includes('shopee') && shopeeAmount) {
+                    const vendor = shopeeMatch ? `Shopee (${shopeeMatch[1].trim().split('\n')[0]})` : 'Shopee Order';
+                    const amount = parseFloat(shopeeAmount[1].replace(',', ''));
+                    if (!isNaN(amount) && amount > 0) {
+                        results.push({ vendor, amount, date: currentDate, category: 'Shopping' });
+                        return results;
+                    }
+                }
+
+                /* 4. Maybank MAE Transfer / Payment Receipt Parser */
+                const maeRecipient = text.match(/(?:Beneficiary Name|To|Transfer To|Recipient Name)\s*:?\s*([A-Za-z0-9\s\-\.\'\&]+)/i);
+                const maeAmount = text.match(/(?:Amount|Total)\s*:?\s*RM\s*([\d\.,]+)/i);
+                if (text.toLowerCase().includes('maybank') || text.toLowerCase().includes('mae')) {
+                    if (maeAmount) {
+                        const vendor = maeRecipient ? `MAE - ${maeRecipient[1].trim().split('\n')[0]}` : 'Maybank MAE Transfer';
+                        const amount = parseFloat(maeAmount[1].replace(',', ''));
+                        if (!isNaN(amount) && amount > 0) {
+                            results.push({ vendor, amount, date: currentDate, category: this.autoCategorize(vendor) });
+                            return results;
+                        }
+                    }
+                }
+
+                /* 5. Wise Money Transfer Parser */
+                if (text.toLowerCase().includes('wise')) {
+                    const wiseRecipient = text.match(/(?:To|Recipient|You sent)\s*:?\s*([A-Za-z0-9\s\-\.\'\&]+)/i);
+                    const wiseAmount = text.match(/(?:You sent|Amount|Total paid)\s*:?\s*(?:MYR|RM)\s*([\d\.,]+)/i);
+                    if (wiseAmount) {
+                        const vendor = wiseRecipient ? `Wise - ${wiseRecipient[1].trim().split('\n')[0]}` : 'Wise Transfer';
+                        const amount = parseFloat(wiseAmount[1].replace(',', ''));
+                        if (!isNaN(amount) && amount > 0) {
+                            results.push({ vendor, amount, date: currentDate, category: 'Utilities & Services' });
+                            return results;
+                        }
+                    }
+                }
+
+                /* 6. Bank Statement Multi-row Parser (RHB/Maybank/CIMB) */
                 lines.forEach(line => {
-                    // Check for Date Section Header (e.g. Tuesday, 20 October 2026)
                     const headerDate = line.match(/(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)?,?\s*(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})/i);
                     if (headerDate) {
                         const day = headerDate[1].padStart(2, '0');
@@ -1408,21 +1514,17 @@
                         return;
                     }
 
-                    // Match debit row items with - MYR or - RM amounts
                     const debitMatch = line.match(/(.*?)(?:-\s*MYR|-\s*RM|\bMYR\b|\bRM\b)\s*([\d\.,]+)/i);
                     if (debitMatch) {
                         let rawVendor = debitMatch[1].trim();
-
-                        // Clean up bank statement noise strings from vendor description
                         rawVendor = rawVendor
-                            .replace(/^\d{6}\s*/, '') // Remove date/ref code prefixes like 181026
+                            .replace(/^\d{6}\s*/, '')
                             .replace(/Debit\s*Card\s*Transaction/i, '')
                             .replace(/Online\s*Transfer/i, '')
                             .replace(/Successful/i, '')
                             .trim();
 
                         const amount = parseFloat(debitMatch[2].replace(',', ''));
-
                         if (rawVendor.length > 1 && !isNaN(amount) && amount > 0) {
                             results.push({
                                 vendor: rawVendor,
@@ -1448,19 +1550,19 @@
 
             autoCategorize(vendor) {
                 const v = vendor.toLowerCase();
-                if (v.includes('restaurant') || v.includes('vege') || v.includes('food') || v.includes('cafe') || v.includes('jaya grocer') || v.includes('moonlight') || v.includes('suzuki')) {
+                if (v.includes('restaurant') || v.includes('vege') || v.includes('food') || v.includes('cafe') || v.includes('jaya grocer') || v.includes('moonlight') || v.includes('suzuki') || v.includes('grabfood') || v.includes('mcdonald')) {
                     return 'Food & Dining';
                 }
                 if (v.includes('guardian') || v.includes('pharmacy') || v.includes('clinic') || v.includes('watson')) {
                     return 'Health & Beauty';
                 }
-                if (v.includes('petronas') || v.includes('shell') || v.includes('grab') || v.includes('parking')) {
+                if (v.includes('petronas') || v.includes('shell') || v.includes('grab') || v.includes('parking') || v.includes('transport')) {
                     return 'Transportation';
                 }
-                if (v.includes('aeon') || v.includes('shopee') || v.includes('lotus') || v.includes('toppen')) {
+                if (v.includes('aeon') || v.includes('shopee') || v.includes('lotus') || v.includes('toppen') || v.includes('lazada') || v.includes('mall')) {
                     return 'Shopping';
                 }
-                if (v.includes('tnb') || v.includes('water') || v.includes('unifi') || v.includes('maxis')) {
+                if (v.includes('tnb') || v.includes('water') || v.includes('unifi') || v.includes('maxis') || v.includes('wise') || v.includes('transfer')) {
                     return 'Utilities & Services';
                 }
                 return 'General';
@@ -1545,11 +1647,35 @@
                 this.render();
             }
 
-            exportData() {
-                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.transactions, null, 2));
+            exportToCsv() {
+                if (!this.transactions || this.transactions.length === 0) {
+                    return;
+                }
+
+                // CSV Column Headers
+                const headers = ["Date", "Type", "Merchant / Vendor", "Category", "Subcategory", "Amount (MYR)"];
+                
+                // Format transaction rows
+                const rows = this.transactions.map(t => {
+                    const date = t.date || '';
+                    const type = (t.type || 'expense').toUpperCase();
+                    // Escape double quotes in text fields to prevent CSV formatting issues
+                    const vendor = `"${(t.vendor || '').replace(/"/g, '""')}"`;
+                    const category = `"${(t.category || '').replace(/"/g, '""')}"`;
+                    const subcategory = `"${(t.subcategory || '').replace(/"/g, '""')}"`;
+                    const amount = (t.amount || 0).toFixed(2);
+                    
+                    return [date, type, vendor, category, subcategory, amount].join(",");
+                });
+
+                // Combine CSV header and rows
+                const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
+                const encodedUri = encodeURI(csvContent);
+                
+                // Create download link
                 const downloadAnchor = document.createElement('a');
-                downloadAnchor.setAttribute("href", dataStr);
-                downloadAnchor.setAttribute("download", `expenses_backup_${new Date().toISOString().split('T')[0]}.json`);
+                downloadAnchor.setAttribute("href", encodedUri);
+                downloadAnchor.setAttribute("download", `expenses_report_${new Date().toISOString().split('T')[0]}.csv`);
                 document.body.appendChild(downloadAnchor);
                 downloadAnchor.click();
                 downloadAnchor.remove();
