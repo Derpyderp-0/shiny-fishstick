@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Smart Expense Tracker PWA [v3.3 Secure Cloud & Agent Ready]</title>
+    <title>Smart Expense Tracker PWA [v3.4 Profile Picture & Cloud Sync]</title>
     <!-- PWA Manifest & Theme Color -->
     <meta name="theme-color" content="#4f46e5">
-    <meta name="description" content="Secure Multi-User Expense Tracker PWA with Responsive UI, Theme Switcher, Real-Time Cloud Sync & OCR">
+    <meta name="description" content="Secure Multi-User Expense Tracker PWA with Profile Picture, Theme Switcher, Real-Time Cloud Sync & OCR">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2845/2845722.png">
     
     <!-- Tailwind CSS -->
@@ -108,8 +108,10 @@
     <div id="auth-screen" class="fixed inset-0 text-white z-50 flex flex-col items-center justify-center p-6 hidden" style="background-color: var(--theme-sidebar);">
         <div class="w-full max-w-md space-y-6">
             <div class="text-center space-y-2">
-                <div class="w-16 h-16 bg-white/10 rounded-3xl flex items-center justify-center mx-auto mb-3 backdrop-blur-md border border-white/20 shadow-xl">
-                    <i data-lucide="wallet" class="w-8 h-8 text-indigo-200"></i>
+                <!-- User Profile Picture Square Container Above Welcome Back -->
+                <div id="auth-logo-container" class="w-20 h-20 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-3 backdrop-blur-md border border-white/20 shadow-xl overflow-hidden">
+                    <img id="auth-profile-img" src="" alt="Profile" class="w-full h-full object-cover hidden">
+                    <i id="auth-default-icon" data-lucide="wallet" class="w-8 h-8 text-indigo-200"></i>
                 </div>
                 <h1 class="text-2xl font-extrabold tracking-tight" id="auth-title">Welcome Back</h1>
                 <p class="text-xs text-indigo-200" id="auth-subtitle">Sign in to sync your personal ledger across PC and mobile</p>
@@ -119,7 +121,7 @@
                 <form id="auth-form" onsubmit="window.app.handleAuth(event)" class="space-y-3">
                     <div>
                         <label class="text-[11px] font-bold uppercase tracking-wider text-indigo-200 mb-1 block">Email Address</label>
-                        <input type="email" id="auth-email" required placeholder="you@example.com" class="w-full px-3.5 py-2.5 text-xs bg-black/20 text-white placeholder-indigo-300 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-white">
+                        <input type="email" id="auth-email" required placeholder="you@example.com" class="w-full px-3.5 py-2.5 text-xs bg-black/20 text-white placeholder-indigo-300 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-white" oninput="window.app.onAuthEmailInput(this.value)">
                     </div>
                     <div>
                         <label class="text-[11px] font-bold uppercase tracking-wider text-indigo-200 mb-1 block">Password</label>
@@ -222,8 +224,9 @@
             <div class="space-y-6">
                 <!-- Brand / Logo -->
                 <div class="flex items-center gap-3 px-2">
-                    <div class="w-10 h-10 bg-white/10 rounded-2xl flex items-center justify-center border border-white/20 shadow-md">
-                        <i data-lucide="wallet" class="w-5 h-5 text-indigo-200"></i>
+                    <div class="w-10 h-10 bg-white/10 rounded-2xl flex items-center justify-center border border-white/20 shadow-md overflow-hidden">
+                        <img id="desktop-sidebar-avatar" src="" alt="Profile" class="w-full h-full object-cover hidden">
+                        <i id="desktop-sidebar-default-icon" data-lucide="wallet" class="w-5 h-5 text-indigo-200"></i>
                     </div>
                     <div>
                         <h1 class="text-sm font-extrabold tracking-tight">Expense Ledger</h1>
@@ -449,16 +452,27 @@
                     <h2 class="text-lg font-bold text-slate-800">Settings & Account</h2>
                     <div class="bg-white rounded-3xl border border-slate-100 p-5 space-y-4 shadow-sm">
                         
-                        <!-- Account Info Card -->
-                        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                            <div>
-                                <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Signed In As</p>
-                                <p id="settings-user-email" class="text-sm font-extrabold text-slate-800 mt-0.5">user@example.com</p>
+                        <!-- Account Info Card & Profile Picture Uploader (< 5MB) -->
+                        <div class="flex flex-col sm:flex-row items-center justify-between pb-4 border-b border-slate-100 gap-4">
+                            <div class="flex items-center gap-3 w-full sm:w-auto">
+                                <div class="w-14 h-14 rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center relative shadow-sm flex-shrink-0">
+                                    <img id="settings-avatar-img" src="" alt="Profile" class="w-full h-full object-cover hidden">
+                                    <i id="settings-avatar-icon" data-lucide="user" class="w-6 h-6 text-slate-400"></i>
+                                </div>
+                                <div class="overflow-hidden">
+                                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Signed In As</p>
+                                    <p id="settings-user-email" class="text-xs sm:text-sm font-extrabold text-slate-800 truncate mt-0.5">user@example.com</p>
+                                    <label class="cursor-pointer text-[11px] font-bold hover:underline inline-block mt-1" style="color: var(--theme-primary);">
+                                        Change Photo (&lt; 5MB)
+                                        <input type="file" accept="image/*" class="hidden" onchange="window.app.handleProfilePictureUpload(event)">
+                                    </label>
+                                </div>
                             </div>
-                            <button onclick="window.app.handleSignOut()" class="px-3.5 py-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                            <button onclick="window.app.handleSignOut()" class="w-full sm:w-auto px-3.5 py-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5">
                                 <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Sign Out
                             </button>
                         </div>
+                        <div id="profile-upload-error" class="text-xs text-rose-500 font-semibold hidden"></div>
 
                         <!-- UI Theme Picker Section -->
                         <div class="pb-3 border-b border-slate-100 space-y-3">
@@ -797,6 +811,7 @@
                 this.hideAmounts = localStorage.getItem('app_hide_amounts') === 'true';
                 this.currentThemeKey = localStorage.getItem('app_theme') || 'indigo';
                 this.isDarkMode = localStorage.getItem('app_dark_mode') === 'true';
+                this.userProfilePicture = localStorage.getItem('app_user_avatar') || '';
                 
                 this.applyTheme(this.currentThemeKey);
                 this.applyDarkMode(this.isDarkMode);
@@ -815,7 +830,7 @@
                 this.initFirebase();
             }
 
-            /* --- AUTHENTICATION METHODS --- */
+            /* --- AUTHENTICATION & LOGIN UI PREVIEW --- */
             toggleAuthMode() {
                 this.isSignUpMode = !this.isSignUpMode;
                 const title = document.getElementById('auth-title');
@@ -836,6 +851,89 @@
                     submitBtn.textContent = "Sign In";
                     toggleText.innerHTML = "Don't have an account? <span class=\"underline font-bold\">Sign Up</span>";
                 }
+            }
+
+            onAuthEmailInput(email) {
+                // If user types an email, we could look up cached local avatar for that email if desired, or rely on global saved avatar
+                this.updateLoginAvatarDisplay(this.userProfilePicture);
+            }
+
+            updateLoginAvatarDisplay(avatarBase64) {
+                const img = document.getElementById('auth-profile-img');
+                const icon = document.getElementById('auth-default-icon');
+                if (!img || !icon) return;
+
+                if (avatarBase64) {
+                    img.src = avatarBase64;
+                    img.classList.remove('hidden');
+                    icon.classList.add('hidden');
+                } else {
+                    img.classList.add('hidden');
+                    icon.classList.remove('hidden');
+                }
+
+                // Also update desktop sidebar avatar if present
+                const sideImg = document.getElementById('desktop-sidebar-avatar');
+                const sideIcon = document.getElementById('desktop-sidebar-default-icon');
+                const settingsImg = document.getElementById('settings-avatar-img');
+                const settingsIcon = document.getElementById('settings-avatar-icon');
+
+                if (sideImg && sideIcon) {
+                    if (avatarBase64) {
+                        sideImg.src = avatarBase64;
+                        sideImg.classList.remove('hidden');
+                        sideIcon.classList.add('hidden');
+                    } else {
+                        sideImg.classList.add('hidden');
+                        sideIcon.classList.remove('hidden');
+                    }
+                }
+
+                if (settingsImg && settingsIcon) {
+                    if (avatarBase64) {
+                        settingsImg.src = avatarBase64;
+                        settingsImg.classList.remove('hidden');
+                        settingsIcon.classList.add('hidden');
+                    } else {
+                        settingsImg.classList.add('hidden');
+                        settingsIcon.classList.remove('hidden');
+                    }
+                }
+            }
+
+            handleProfilePictureUpload(event) {
+                const file = event.target.files && event.target.files[0];
+                const errBox = document.getElementById('profile-upload-error');
+                if (errBox) errBox.classList.add('hidden');
+
+                if (!file) return;
+
+                // Validate < 5MB file size limit
+                if (file.size > 5 * 1024 * 1024) {
+                    if (errBox) {
+                        errBox.textContent = "Profile picture must be less than 5MB.";
+                        errBox.classList.remove('hidden');
+                    }
+                    event.target.value = '';
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const base64String = e.target.result;
+                    this.userProfilePicture = base64String;
+                    localStorage.setItem('app_user_avatar', base64String);
+                    this.updateLoginAvatarDisplay(base64String);
+                    this.saveUserSettingsToCloud();
+                };
+                reader.onerror = () => {
+                    if (errBox) {
+                        errBox.textContent = "Failed to read image file.";
+                        errBox.classList.remove('hidden');
+                    }
+                };
+                reader.readAsDataURL(file);
+                event.target.value = '';
             }
 
             handleAuth(event) {
@@ -936,6 +1034,7 @@
                 this.db.collection('users').doc(this.currentUser.uid).collection('settings').doc('preferences').set({
                     theme: this.currentThemeKey,
                     darkMode: this.isDarkMode,
+                    avatar: this.userProfilePicture,
                     updatedAt: Date.now()
                 }, { merge: true }).catch(err => {
                     console.error("Error saving preferences to cloud:", err);
@@ -957,12 +1056,14 @@
                             document.getElementById('auth-screen').classList.add('hidden');
                             document.getElementById('desktop-user-email').textContent = user.email;
                             document.getElementById('settings-user-email').textContent = user.email;
+                            this.updateLoginAvatarDisplay(this.userProfilePicture);
                             this.initSecurity();
                             this.initCloudSync();
                         } else {
                             this.currentUser = null;
                             document.getElementById('auth-screen').classList.remove('hidden');
                             document.getElementById('pin-screen').classList.add('hidden');
+                            this.updateLoginAvatarDisplay(this.userProfilePicture);
                         }
                     });
                 } catch (e) {
@@ -975,7 +1076,7 @@
                 if (!this.currentUser) return;
                 const uid = this.currentUser.uid;
 
-                // 1. Real-time listener for User Preferences (Theme & Dark Mode)
+                // 1. Real-time listener for User Preferences (Theme, Dark Mode, Avatar)
                 this.db.collection('users').doc(uid).collection('settings').doc('preferences').onSnapshot((doc) => {
                     if (doc.exists) {
                         const data = doc.data();
@@ -988,6 +1089,11 @@
                             this.isDarkMode = data.darkMode;
                             localStorage.setItem('app_dark_mode', data.darkMode);
                             this.applyDarkMode(data.darkMode);
+                        }
+                        if (data.avatar) {
+                            this.userProfilePicture = data.avatar;
+                            localStorage.setItem('app_user_avatar', data.avatar);
+                            this.updateLoginAvatarDisplay(data.avatar);
                         }
                     }
                 }, (err) => {
@@ -1041,42 +1147,6 @@
                     }
                 }, (err) => {
                     console.error("Cloud categories sync error:", err);
-                });
-
-                // Periodic 1-Hour Background Refresh Timer
-                setInterval(() => {
-                    this.refreshCloudData();
-                }, 60 * 60 * 1000);
-            }
-
-            refreshCloudData() {
-                if (!this.currentUser) return;
-                const uid = this.currentUser.uid;
-                this.db.collection('users').doc(uid).collection('expenses').get().then((snapshot) => {
-                    const cloudMap = new Map();
-                    this.transactions.forEach(t => cloudMap.set(String(t.id), t));
-                    const activeCloudIds = new Set();
-
-                    snapshot.forEach((doc) => {
-                        activeCloudIds.add(String(doc.id));
-                        const cloudItem = { id: doc.id, ...doc.data() };
-                        const existing = cloudMap.get(String(cloudItem.id));
-                        if (!existing || (cloudItem.updatedAt || 0) >= (existing.updatedAt || 0)) {
-                            cloudMap.set(String(cloudItem.id), cloudItem);
-                        }
-                    });
-
-                    for (let [id] of cloudMap) {
-                        if (!activeCloudIds.has(String(id))) {
-                            cloudMap.delete(id);
-                        }
-                    }
-
-                    this.transactions = Array.from(cloudMap.values()).sort((a, b) => new Date(b.date) - new Date(a.date));
-                    localStorage.setItem('app_transactions', JSON.stringify(this.transactions));
-                    this.render();
-                }).catch(err => {
-                    console.error("Periodic refresh error:", err);
                 });
             }
 
