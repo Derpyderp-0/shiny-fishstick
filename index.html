@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Smart Expense Tracker PWA</title>
+    <title>Smart Expense Tracker PWA [v3.3 Secure Cloud & Agent Ready]</title>
     <!-- PWA Manifest & Theme Color -->
     <meta name="theme-color" content="#4f46e5">
-    <meta name="description" content="Secure Multi-User Expense Tracker PWA with Responsive Desktop & Mobile UI, Real-Time Cloud Sync & OCR">
+    <meta name="description" content="Secure Multi-User Expense Tracker PWA with Responsive UI, Theme Switcher, Real-Time Cloud Sync & OCR">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2845/2845722.png">
     
     <!-- Tailwind CSS -->
@@ -41,11 +41,71 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        /* Dynamic Theme Variables injected by JS */
+        :root {
+            --theme-primary: #4f46e5;
+            --theme-primary-dark: #4338ca;
+            --theme-bg-gradient-from: #4f46e5;
+            --theme-bg-gradient-to: #312e81;
+            --theme-sidebar: #1e1b4b;
+        }
+
+        /* Light / Dark Mode Override Variables */
+        body.theme-light {
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        body.theme-light .app-card, 
+        body.theme-light .bg-white {
+            background-color: #ffffff !important;
+            color: #1e293b !important;
+            border-color: #e2e8f0 !important;
+        }
+        body.theme-light .text-slate-400 { color: #64748b !important; }
+        body.theme-light .text-slate-500 { color: #475569 !important; }
+        body.theme-light .text-slate-600 { color: #334155 !important; }
+        body.theme-light .text-slate-700 { color: #1e293b !important; }
+        body.theme-light .text-slate-800 { color: #0f172a !important; }
+        body.theme-light input, body.theme-light select {
+            background-color: #f8fafc !important;
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important;
+        }
+
+        body.theme-dark {
+            background-color: #0f172a;
+            color: #f1f5f9;
+        }
+        body.theme-dark .app-card, 
+        body.theme-dark .bg-white,
+        body.theme-dark header,
+        body.theme-dark nav.bg-white {
+            background-color: #1e293b !important;
+            color: #f1f5f9 !important;
+            border-color: #334155 !important;
+        }
+        body.theme-dark .text-slate-400 { color: #94a3b8 !important; }
+        body.theme-dark .text-slate-500 { color: #cbd5e1 !important; }
+        body.theme-dark .text-slate-600 { color: #e2e8f0 !important; }
+        body.theme-dark .text-slate-700 { color: #f1f5f9 !important; }
+        body.theme-dark .text-slate-800 { color: #ffffff !important; }
+        body.theme-dark input, body.theme-dark select {
+            background-color: #0f172a !important;
+            color: #ffffff !important;
+            border-color: #475569 !important;
+        }
+        body.theme-dark .bg-slate-50 { background-color: #0f172a !important; }
+        body.theme-dark .bg-slate-100 { background-color: #334155 !important; color: #f1f5f9 !important; }
+        body.theme-dark .border-slate-100, 
+        body.theme-dark .border-slate-200 { border-color: #334155 !important; }
+    </style>
 </head>
 <body class="h-full text-slate-800 antialiased font-sans select-none overflow-x-hidden">
 
     <!-- LOGIN / AUTH SCREEN -->
-    <div id="auth-screen" class="fixed inset-0 bg-indigo-900 text-white z-50 flex flex-col items-center justify-center p-6 hidden">
+    <div id="auth-screen" class="fixed inset-0 text-white z-50 flex flex-col items-center justify-center p-6 hidden" style="background-color: var(--theme-sidebar);">
         <div class="w-full max-w-md space-y-6">
             <div class="text-center space-y-2">
                 <div class="w-16 h-16 bg-white/10 rounded-3xl flex items-center justify-center mx-auto mb-3 backdrop-blur-md border border-white/20 shadow-xl">
@@ -79,7 +139,7 @@
     </div>
 
     <!-- MOBILE PIN SECURITY OVERLAY (MOBILE ONLY) -->
-    <div id="pin-screen" class="fixed inset-0 bg-indigo-900 text-white z-50 flex flex-col items-center justify-center p-6 hidden">
+    <div id="pin-screen" class="fixed inset-0 text-white z-50 flex flex-col items-center justify-center p-6 hidden" style="background-color: var(--theme-sidebar);">
         <div class="text-center space-y-2 mb-8">
             <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3 backdrop-blur-md border border-white/20">
                 <i data-lucide="lock" class="w-8 h-8 text-indigo-200"></i>
@@ -132,7 +192,7 @@
             </div>
             <div class="grid grid-cols-2 gap-2 pt-2">
                 <button onclick="window.app.closeForgotPinModal()" class="py-2.5 bg-slate-100 text-slate-700 font-semibold text-xs rounded-xl hover:bg-slate-200 transition">Cancel</button>
-                <button onclick="window.app.confirmForgotPinReset()" class="py-2.5 bg-indigo-600 text-white font-semibold text-xs rounded-xl hover:bg-indigo-700 transition">Reset PIN Now</button>
+                <button onclick="window.app.confirmForgotPinReset()" class="py-2.5 text-white font-semibold text-xs rounded-xl transition theme-btn" style="background-color: var(--theme-primary);">Reset PIN Now</button>
             </div>
         </div>
     </div>
@@ -158,7 +218,7 @@
     <div id="app-container" class="w-full max-w-md mx-auto sm:max-w-none sm:w-full h-full flex flex-col sm:flex-row bg-slate-50 relative overflow-hidden shadow-2xl sm:rounded-none">
         
         <!-- DESKTOP SIDEBAR NAVIGATION (DESKTOP ONLY ≥ 768px) -->
-        <aside class="hidden sm:flex flex-col w-64 bg-indigo-900 text-white p-6 justify-between shadow-xl z-20">
+        <aside id="desktop-sidebar" class="hidden sm:flex flex-col w-64 text-white p-6 justify-between shadow-xl z-20" style="background-color: var(--theme-sidebar);">
             <div class="space-y-6">
                 <!-- Brand / Logo -->
                 <div class="flex items-center gap-3 px-2">
@@ -192,7 +252,7 @@
 
             <!-- Desktop Bottom Quick Action & Sign Out -->
             <div class="space-y-3 pt-6 border-t border-white/10">
-                <button onclick="window.app.openModal()" class="w-full py-3 bg-white text-indigo-900 font-extrabold text-xs rounded-2xl hover:bg-indigo-50 transition shadow-md flex items-center justify-center gap-2">
+                <button onclick="window.app.openModal()" class="w-full py-3 bg-white text-indigo-900 font-extrabold text-xs rounded-2xl hover:bg-indigo-50 transition shadow-md flex items-center justify-center gap-2" id="desktop-add-btn">
                     <i data-lucide="plus-circle" class="w-4 h-4"></i> Add Transaction
                 </button>
                 <div class="flex items-center justify-between text-xs text-indigo-200 px-1 pt-2">
@@ -205,7 +265,7 @@
         </aside>
 
         <!-- MOBILE HEADER (MOBILE ONLY < 768px) -->
-        <header class="sm:hidden bg-indigo-600 text-white p-4 pt-6 flex justify-between items-center shadow-md relative z-20">
+        <header id="mobile-header" class="sm:hidden text-white p-4 pt-6 flex justify-between items-center shadow-md relative z-20" style="background-color: var(--theme-primary);">
             <div>
                 <span class="text-[10px] font-bold tracking-widest uppercase text-indigo-200 flex items-center gap-1.5">
                     Personal Ledger
@@ -233,7 +293,7 @@
                 <section id="view-dashboard" class="space-y-4 max-w-4xl mx-auto w-full">
                     
                     <!-- Income & Expenses Summary Card with Hide/Show Privacy -->
-                    <div class="bg-gradient-to-br from-indigo-600 to-indigo-800 text-white p-5 sm:p-8 rounded-3xl shadow-lg shadow-indigo-200 relative overflow-hidden">
+                    <div id="summary-card" class="text-white p-5 sm:p-8 rounded-3xl shadow-lg relative overflow-hidden" style="background: linear-gradient(to bottom right, var(--theme-bg-gradient-from), var(--theme-bg-gradient-to));">
                         <div class="absolute -right-4 -bottom-4 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
                         
                         <div class="flex justify-between items-center mb-1">
@@ -284,7 +344,7 @@
                         <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm space-y-3">
                             <div class="flex justify-between items-center">
                                 <h2 class="text-xs font-bold uppercase text-slate-400 tracking-wider">Categories Summary</h2>
-                                <button onclick="window.app.openCategoryManager()" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                                <button onclick="window.app.openCategoryManager()" class="text-xs font-semibold hover:opacity-80 flex items-center gap-1" style="color: var(--theme-primary);">
                                     <i data-lucide="settings-2" class="w-3.5 h-3.5"></i> Manage
                                 </button>
                             </div>
@@ -318,10 +378,10 @@
                         <!-- Month Filter Bar -->
                         <div class="flex items-center justify-between bg-white p-3 rounded-2xl border border-slate-200">
                             <div class="flex items-center gap-1.5 text-slate-500 text-xs font-semibold">
-                                <i data-lucide="calendar" class="w-4 h-4 text-indigo-600"></i>
+                                <i data-lucide="calendar" class="w-4 h-4" style="color: var(--theme-primary);"></i>
                                 <span>Period:</span>
                             </div>
-                            <select id="txn-month-filter" onchange="window.app.filterTransactions()" class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-indigo-700">
+                            <select id="txn-month-filter" onchange="window.app.filterTransactions()" class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold" style="color: var(--theme-primary-dark);">
                                 <!-- Populated dynamically -->
                             </select>
                         </div>
@@ -342,7 +402,7 @@
                 <!-- VIEW 3: SCAN & OCR RECEIPT / STATEMENT / TNG -->
                 <section id="view-scan" class="space-y-4 max-w-4xl mx-auto w-full hidden">
                     <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-100 shadow-sm text-center">
-                        <div class="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-3 text-indigo-600 border border-indigo-100/50">
+                        <div class="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-3 text-indigo-600 border border-indigo-100/50" style="color: var(--theme-primary);">
                             <i data-lucide="scan-line" class="w-7 h-7"></i>
                         </div>
                         <h2 class="text-base sm:text-lg font-bold text-slate-800">Scan your transaction to Record!</h2>
@@ -350,7 +410,7 @@
 
                         <!-- Consolidated Single / Multi Upload Input -->
                         <div class="mt-5 max-w-xs mx-auto">
-                            <label class="cursor-pointer bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold px-5 py-3.5 rounded-2xl shadow-md shadow-indigo-200 transition-all flex items-center justify-center gap-2.5">
+                            <label class="cursor-pointer text-white text-xs font-bold px-5 py-3.5 rounded-2xl shadow-md transition-all flex items-center justify-center gap-2.5 hover:opacity-90 active:scale-95" style="background-color: var(--theme-primary);">
                                 <i data-lucide="file-up" class="w-4 h-4"></i>
                                 <span>Upload Images / PDF</span>
                                 <input type="file" accept="image/*,application/pdf" multiple class="hidden" onchange="window.app.handleFileUpload(event)">
@@ -363,7 +423,7 @@
                         <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent"></div>
                         <p id="ocr-status-text" class="text-xs font-semibold text-indigo-900">Parsing Statements & Screenshots...</p>
                         <div class="w-full bg-indigo-200/60 h-2 rounded-full overflow-hidden max-w-xs mx-auto">
-                            <div id="ocr-progress" class="bg-indigo-600 h-full w-0 transition-all duration-300 rounded-full"></div>
+                            <div id="ocr-progress" class="h-full w-0 transition-all duration-300 rounded-full" style="background-color: var(--theme-primary);"></div>
                         </div>
                     </div>
 
@@ -377,7 +437,7 @@
                         <div id="ocr-detected-list" class="space-y-2">
                             <!-- Detected entries render dynamically -->
                         </div>
-                        <button onclick="window.app.batchSaveScanResults()" class="w-full bg-indigo-600 text-white font-semibold text-sm py-3.5 rounded-2xl shadow-md hover:bg-indigo-700 active:scale-98 transition flex items-center justify-center gap-2">
+                        <button onclick="window.app.batchSaveScanResults()" class="w-full text-white font-semibold text-sm py-3.5 rounded-2xl shadow-md hover:opacity-90 active:scale-98 transition flex items-center justify-center gap-2" style="background-color: var(--theme-primary);">
                             <i data-lucide="check-circle-2" class="w-4 h-4"></i>
                             <span>Confirm & Import to MYR Expenses</span>
                         </button>
@@ -400,11 +460,49 @@
                             </button>
                         </div>
 
+                        <!-- UI Theme Picker Section -->
+                        <div class="pb-3 border-b border-slate-100 space-y-3">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <p class="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
+                                        <i data-lucide="palette" class="w-4 h-4" style="color: var(--theme-primary);"></i>
+                                        UI Color Theme & Mode
+                                    </p>
+                                    <p class="text-xs text-slate-400">Customize appearance and switch between light and dark mode</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Light / Dark Mode Toggle Buttons -->
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="window.app.setDarkMode(false)" id="mode-btn-light" class="p-2.5 rounded-2xl border text-xs font-bold flex items-center justify-center gap-2 transition bg-slate-50 text-slate-700">
+                                    <i data-lucide="sun" class="w-4 h-4 text-amber-500"></i> Light Mode
+                                </button>
+                                <button onclick="window.app.setDarkMode(true)" id="mode-btn-dark" class="p-2.5 rounded-2xl border text-xs font-bold flex items-center justify-center gap-2 transition bg-slate-50 text-slate-700">
+                                    <i data-lucide="moon" class="w-4 h-4 text-indigo-400"></i> Dark Mode
+                                </button>
+                            </div>
+
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                                <button onclick="window.app.setAppTheme('indigo')" id="theme-btn-indigo" class="p-2.5 rounded-2xl border text-xs font-bold flex items-center gap-2 transition hover:bg-slate-50">
+                                    <span class="w-4 h-4 rounded-full bg-indigo-600"></span> Indigo
+                                </button>
+                                <button onclick="window.app.setAppTheme('emerald')" id="theme-btn-emerald" class="p-2.5 rounded-2xl border text-xs font-bold flex items-center gap-2 transition hover:bg-slate-50">
+                                    <span class="w-4 h-4 rounded-full bg-emerald-600"></span> Emerald
+                                </button>
+                                <button onclick="window.app.setAppTheme('sunset')" id="theme-btn-sunset" class="p-2.5 rounded-2xl border text-xs font-bold flex items-center gap-2 transition hover:bg-slate-50">
+                                    <span class="w-4 h-4 rounded-full bg-amber-600"></span> Sunset
+                                </button>
+                                <button onclick="window.app.setAppTheme('slate')" id="theme-btn-slate" class="p-2.5 rounded-2xl border text-xs font-bold flex items-center gap-2 transition hover:bg-slate-50">
+                                    <span class="w-4 h-4 rounded-full bg-slate-800"></span> Slate
+                                </button>
+                            </div>
+                        </div>
+
                         <!-- Real-Time Cloud Sync Status Card -->
                         <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                             <div>
                                 <p class="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
-                                    <i data-lucide="cloud" class="w-4 h-4 text-indigo-600"></i>
+                                    <i data-lucide="cloud" class="w-4 h-4" style="color: var(--theme-primary);"></i>
                                     Cloud Real-Time Sync
                                 </p>
                                 <p class="text-xs text-slate-400">Connected & Secured to Firebase Cloud (<span class="font-mono text-indigo-600">personal-use-385b5</span>)</p>
@@ -419,7 +517,7 @@
                                 <p class="text-sm font-semibold">Categories & Subcategories</p>
                                 <p class="text-xs text-slate-400">Add, rename or delete spending tags</p>
                             </div>
-                            <button onclick="window.app.openCategoryManager()" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-semibold px-3 py-1.5 rounded-lg border border-indigo-100">Manage</button>
+                            <button onclick="window.app.openCategoryManager()" class="text-xs bg-indigo-50 hover:bg-indigo-100 font-semibold px-3 py-1.5 rounded-lg border border-indigo-100" style="color: var(--theme-primary);">Manage</button>
                         </div>
 
                         <!-- Mobile-Only Screen Lock PIN Setting -->
@@ -438,7 +536,7 @@
                                 <button onclick="window.app.exportToCsv()" class="py-2.5 bg-emerald-600 text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 hover:bg-emerald-700 transition shadow-sm">
                                     <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Export CSV
                                 </button>
-                                <label class="cursor-pointer py-2.5 bg-indigo-600 text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 hover:bg-indigo-700 transition shadow-sm">
+                                <label class="cursor-pointer text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 hover:opacity-90 transition shadow-sm" style="background-color: var(--theme-primary);">
                                     <i data-lucide="file-input" class="w-4 h-4"></i> Import CSV
                                     <input type="file" accept=".csv" class="hidden" onchange="window.app.importFromCsv(event)">
                                 </label>
@@ -471,7 +569,7 @@
                 </div>
                 <div class="grid grid-cols-2 gap-2 pt-2">
                     <button onclick="window.app.closeResetPinModal()" class="py-2.5 bg-slate-100 text-slate-700 font-semibold text-xs rounded-xl hover:bg-slate-200 transition">Cancel</button>
-                    <button onclick="window.app.confirmResetPin()" class="py-2.5 bg-indigo-600 text-white font-semibold text-xs rounded-xl hover:bg-indigo-700 transition">Reset PIN Now</button>
+                    <button onclick="window.app.confirmResetPin()" class="py-2.5 text-white font-semibold text-xs rounded-xl transition" style="background-color: var(--theme-primary);">Reset PIN Now</button>
                 </div>
             </div>
         </div>
@@ -480,7 +578,7 @@
         <div class="fixed sm:hidden bottom-20 right-5 flex flex-col items-end gap-2 z-30">
             <!-- Floating Speed Dial Sub-Options -->
             <div id="fab-menu" class="hidden flex-col items-end gap-2 transition-all duration-200">
-                <button onclick="window.app.openModal(); window.app.toggleFabMenu();" class="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-full shadow-lg text-xs font-semibold hover:bg-indigo-700 transition active:scale-95">
+                <button onclick="window.app.openModal(); window.app.toggleFabMenu();" class="flex items-center gap-2 text-white px-4 py-2.5 rounded-full shadow-lg text-xs font-semibold hover:opacity-90 transition active:scale-95" style="background-color: var(--theme-primary);">
                     <i data-lucide="pen-tool" class="w-4 h-4"></i>
                     <span>Add Manually</span>
                 </button>
@@ -491,7 +589,7 @@
             </div>
             
             <!-- Main FAB Toggle Button -->
-            <button id="fab-main-btn" onclick="window.app.toggleFabMenu()" class="w-14 h-14 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-indigo-300 hover:bg-indigo-700 transition-transform duration-200 active:scale-95">
+            <button id="fab-main-btn" onclick="window.app.toggleFabMenu()" class="w-14 h-14 text-white rounded-full flex items-center justify-center shadow-lg hover:opacity-90 transition-transform duration-200 active:scale-95" style="background-color: var(--theme-primary);">
                 <i id="fab-icon" data-lucide="plus" class="w-7 h-7"></i>
             </button>
         </div>
@@ -501,7 +599,7 @@
 
         <!-- MOBILE BOTTOM NAVIGATION BAR -->
         <nav class="sm:hidden bg-white border-t border-slate-200 flex justify-around p-2 text-slate-400 font-medium text-xs relative z-20">
-            <button id="nav-dashboard" onclick="window.app.switchView('dashboard')" class="flex flex-col items-center py-1 px-3 text-indigo-600 transition">
+            <button id="nav-dashboard" onclick="window.app.switchView('dashboard')" class="flex flex-col items-center py-1 px-3 text-indigo-600 transition" style="color: var(--theme-primary);">
                 <i data-lucide="layout-dashboard" class="w-5 h-5 mb-0.5"></i>
                 <span>Home</span>
             </button>
@@ -576,7 +674,7 @@
                     </div>
                     <div class="pt-2 flex gap-2">
                         <button type="button" onclick="window.app.closeModal()" class="w-1/2 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition">Cancel</button>
-                        <button type="submit" class="w-1/2 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition">Save Transaction</button>
+                        <button type="submit" class="w-1/2 py-2.5 rounded-xl text-white text-xs font-semibold hover:opacity-90 transition" style="background-color: var(--theme-primary);">Save Transaction</button>
                     </div>
                 </form>
             </div>
@@ -626,7 +724,7 @@
                     <div class="flex gap-2">
                         <input type="text" id="new-cat-name" placeholder="Category Name" class="flex-1 px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         <input type="color" id="new-cat-color" value="#6366f1" class="w-9 h-9 rounded-xl border-0 cursor-pointer p-0">
-                        <button onclick="window.app.addNewCategory()" class="bg-indigo-600 text-white px-3 py-2 text-xs font-semibold rounded-xl hover:bg-indigo-700 transition">Add</button>
+                        <button onclick="window.app.addNewCategory()" class="text-white px-3 py-2 text-xs font-semibold rounded-xl hover:opacity-90 transition" style="background-color: var(--theme-primary);">Add</button>
                     </div>
                 </div>
 
@@ -654,7 +752,7 @@
                 </div>
                 <div class="grid grid-cols-2 gap-2 pt-2">
                     <button onclick="window.app.closeEditCategoryModal()" class="py-2.5 bg-slate-100 text-slate-700 font-semibold text-xs rounded-xl hover:bg-slate-200 transition">Cancel</button>
-                    <button onclick="window.app.confirmEditCategory()" class="py-2.5 bg-indigo-600 text-white font-semibold text-xs rounded-xl hover:bg-indigo-700 transition">Save Changes</button>
+                    <button onclick="window.app.confirmEditCategory()" class="py-2.5 text-white font-semibold text-xs rounded-xl hover:opacity-90 transition" style="background-color: var(--theme-primary);">Save Changes</button>
                 </div>
             </div>
         </div>
@@ -674,6 +772,13 @@
             'General': { color: '#64748b', icon: 'grid', subcategories: [] }
         };
 
+        const APP_THEMES = {
+            indigo: { name: 'Indigo Classic', primary: '#4f46e5', dark: '#4338ca', gradFrom: '#4f46e5', gradTo: '#312e81', sidebar: '#1e1b4b' },
+            emerald: { name: 'Emerald Green', primary: '#059669', dark: '#047857', gradFrom: '#059669', gradTo: '#064e3b', sidebar: '#022c22' },
+            sunset: { name: 'Sunset Amber', primary: '#d97706', dark: '#b45309', gradFrom: '#d97706', gradTo: '#78350f', sidebar: '#451a03' },
+            slate: { name: 'Dark Slate', primary: '#334155', dark: '#1e293b', gradFrom: '#334155', gradTo: '#0f172a', sidebar: '#090d16' }
+        };
+
         const SECURE_FIREBASE_CONFIG = {
             apiKey: "AIzaSyDtg4qSodMbwevQvu9ECpb8S-WvxE6UKik",
             authDomain: "personal-use-385b5.firebaseapp.com",
@@ -690,6 +795,11 @@
                 this.tempFirstPin = null;
                 
                 this.hideAmounts = localStorage.getItem('app_hide_amounts') === 'true';
+                this.currentThemeKey = localStorage.getItem('app_theme') || 'indigo';
+                this.isDarkMode = localStorage.getItem('app_dark_mode') === 'true';
+                
+                this.applyTheme(this.currentThemeKey);
+                this.applyDarkMode(this.isDarkMode);
                 
                 this.categories = JSON.parse(localStorage.getItem('app_categories')) || DEFAULT_CATEGORIES;
                 this.transactions = JSON.parse(localStorage.getItem('app_transactions')) || [];
@@ -699,9 +809,137 @@
                 this.db = null;
                 this.auth = null;
                 this.currentUser = null;
+                this.isSignUpMode = false;
 
                 this.initChart();
                 this.initFirebase();
+            }
+
+            /* --- AUTHENTICATION METHODS --- */
+            toggleAuthMode() {
+                this.isSignUpMode = !this.isSignUpMode;
+                const title = document.getElementById('auth-title');
+                const subtitle = document.getElementById('auth-subtitle');
+                const submitBtn = document.getElementById('auth-submit-btn');
+                const toggleText = document.getElementById('auth-toggle-text');
+                const errorBox = document.getElementById('auth-error');
+                if (errorBox) errorBox.classList.add('hidden');
+
+                if (this.isSignUpMode) {
+                    title.textContent = "Create Account";
+                    subtitle.textContent = "Sign up to securely sync your ledger across PC and mobile";
+                    submitBtn.textContent = "Sign Up";
+                    toggleText.innerHTML = 'Already have an account? <span class="underline font-bold">Sign In</span>';
+                } else {
+                    title.textContent = "Welcome Back";
+                    subtitle.textContent = "Sign in to sync your personal ledger across PC and mobile";
+                    submitBtn.textContent = "Sign In";
+                    toggleText.innerHTML = "Don't have an account? <span class=\"underline font-bold\">Sign Up</span>";
+                }
+            }
+
+            handleAuth(event) {
+                event.preventDefault();
+                const email = document.getElementById('auth-email').value.trim();
+                const password = document.getElementById('auth-password').value;
+                const errorBox = document.getElementById('auth-error');
+                if (errorBox) errorBox.classList.add('hidden');
+
+                if (!this.auth) {
+                    if (errorBox) {
+                        errorBox.textContent = "Authentication service not initialized.";
+                        errorBox.classList.remove('hidden');
+                    }
+                    return;
+                }
+
+                const promise = this.isSignUpMode 
+                    ? this.auth.createUserWithEmailAndPassword(email, password)
+                    : this.auth.signInWithEmailAndPassword(email, password);
+
+                promise.catch(err => {
+                    if (errorBox) {
+                        errorBox.textContent = err.message || "Authentication failed.";
+                        errorBox.classList.remove('hidden');
+                    }
+                });
+            }
+
+            handleSignOut() {
+                if (this.auth) {
+                    this.auth.signOut().then(() => {
+                        window.location.reload();
+                    }).catch(err => {
+                        console.error("Sign out error:", err);
+                    });
+                }
+            }
+
+            /* --- THEME & LIGHT/DARK MODE MANAGER --- */
+            setDarkMode(isDark) {
+                this.isDarkMode = isDark;
+                localStorage.setItem('app_dark_mode', isDark);
+                this.applyDarkMode(isDark);
+                this.saveUserSettingsToCloud();
+            }
+
+            applyDarkMode(isDark) {
+                const body = document.body;
+                const lightBtn = document.getElementById('mode-btn-light');
+                const darkBtn = document.getElementById('mode-btn-dark');
+
+                if (isDark) {
+                    body.classList.remove('theme-light');
+                    body.classList.add('theme-dark');
+                    if (lightBtn) lightBtn.className = "p-2.5 rounded-2xl border border-slate-700 text-xs font-bold flex items-center justify-center gap-2 transition bg-slate-800 text-slate-300";
+                    if (darkBtn) darkBtn.className = "p-2.5 rounded-2xl border-2 border-indigo-500 text-xs font-bold flex items-center justify-center gap-2 transition bg-slate-800 text-white shadow-sm";
+                } else {
+                    body.classList.remove('theme-dark');
+                    body.classList.add('theme-light');
+                    if (lightBtn) lightBtn.className = "p-2.5 rounded-2xl border-2 border-indigo-600 text-xs font-bold flex items-center justify-center gap-2 transition bg-white text-slate-900 shadow-sm";
+                    if (darkBtn) darkBtn.className = "p-2.5 rounded-2xl border border-slate-200 text-xs font-bold flex items-center justify-center gap-2 transition bg-slate-50 text-slate-600";
+                }
+            }
+
+            setAppTheme(themeKey) {
+                if (!APP_THEMES[themeKey]) return;
+                this.currentThemeKey = themeKey;
+                localStorage.setItem('app_theme', themeKey);
+                this.applyTheme(themeKey);
+                this.saveUserSettingsToCloud();
+            }
+
+            applyTheme(themeKey) {
+                const t = APP_THEMES[themeKey] || APP_THEMES.indigo;
+                const root = document.documentElement;
+                root.style.setProperty('--theme-primary', t.primary);
+                root.style.setProperty('--theme-primary-dark', t.dark);
+                root.style.setProperty('--theme-bg-gradient-from', t.gradFrom);
+                root.style.setProperty('--theme-bg-gradient-to', t.gradTo);
+                root.style.setProperty('--theme-sidebar', t.sidebar);
+
+                ['indigo', 'emerald', 'sunset', 'slate'].forEach(k => {
+                    const btn = document.getElementById(`theme-btn-${k}`);
+                    if (btn) {
+                        if (k === themeKey) {
+                            btn.className = "p-2.5 rounded-2xl border-2 text-xs font-bold flex items-center gap-2 transition shadow-sm bg-slate-50";
+                            btn.style.borderColor = t.primary;
+                        } else {
+                            btn.className = "p-2.5 rounded-2xl border border-slate-200 text-xs font-bold flex items-center gap-2 transition hover:bg-slate-50";
+                        }
+                    }
+                });
+            }
+
+            saveUserSettingsToCloud() {
+                if (!this.currentUser || !this.db) return;
+                this.db.collection('users').doc(this.currentUser.uid).collection('settings').doc('preferences').set({
+                    theme: this.currentThemeKey,
+                    darkMode: this.isDarkMode,
+                    updatedAt: Date.now()
+                }, { merge: true }).catch(err => {
+                    console.error("Error saving preferences to cloud:", err);
+                });
             }
 
             /* --- FIREBASE AUTH & FIRESTORE SYNC --- */
@@ -733,59 +971,30 @@
                 }
             }
 
-            toggleAuthMode() {
-                const title = document.getElementById('auth-title');
-                const subtitle = document.getElementById('auth-subtitle');
-                const btn = document.getElementById('auth-submit-btn');
-                const toggle = document.getElementById('auth-toggle-text');
-                
-                if (btn.textContent === 'Sign In') {
-                    title.textContent = 'Create Account';
-                    subtitle.textContent = 'Sign up to sync your personal ledger across devices';
-                    btn.textContent = 'Sign Up';
-                    toggle.innerHTML = 'Already have an account? <span class="underline font-bold">Sign In</span>';
-                } else {
-                    title.textContent = 'Welcome Back';
-                    subtitle.textContent = 'Sign in to sync your personal ledger across PC and mobile';
-                    btn.textContent = 'Sign In';
-                    toggle.innerHTML = "Don't have an account? <span class=\"underline font-bold\">Sign Up</span>";
-                }
-            }
-
-            handleAuth(event) {
-                event.preventDefault();
-                const email = document.getElementById('auth-email').value;
-                const password = document.getElementById('auth-password').value;
-                const btnText = document.getElementById('auth-submit-btn').textContent;
-                const errDiv = document.getElementById('auth-error');
-                errDiv.classList.add('hidden');
-
-                if (btnText === 'Sign Up') {
-                    this.auth.createUserWithEmailAndPassword(email, password).catch(err => {
-                        errDiv.textContent = err.message;
-                        errDiv.classList.remove('hidden');
-                    });
-                } else {
-                    this.auth.signInWithEmailAndPassword(email, password).catch(err => {
-                        errDiv.textContent = err.message;
-                        errDiv.classList.remove('hidden');
-                    });
-                }
-            }
-
-            handleSignOut() {
-                this.auth.signOut().then(() => {
-                    this.transactions = [];
-                    this.categories = DEFAULT_CATEGORIES;
-                    window.location.reload();
-                });
-            }
-
             initCloudSync() {
                 if (!this.currentUser) return;
                 const uid = this.currentUser.uid;
 
-                // 1. Real-time listener for User Expenses with timestamp reconciliation
+                // 1. Real-time listener for User Preferences (Theme & Dark Mode)
+                this.db.collection('users').doc(uid).collection('settings').doc('preferences').onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        if (data.theme && APP_THEMES[data.theme]) {
+                            this.currentThemeKey = data.theme;
+                            localStorage.setItem('app_theme', data.theme);
+                            this.applyTheme(data.theme);
+                        }
+                        if (typeof data.darkMode === 'boolean') {
+                            this.isDarkMode = data.darkMode;
+                            localStorage.setItem('app_dark_mode', data.darkMode);
+                            this.applyDarkMode(data.darkMode);
+                        }
+                    }
+                }, (err) => {
+                    console.error("Cloud preferences sync error:", err);
+                });
+
+                // 2. Real-time listener for User Expenses with timestamp reconciliation
                 this.db.collection('users').doc(uid).collection('expenses').onSnapshot((snapshot) => {
                     const cloudMap = new Map();
                     this.transactions.forEach(t => cloudMap.set(String(t.id), t));
@@ -814,7 +1023,7 @@
                     console.error("Cloud expense sync error:", err);
                 });
 
-                // 2. Real-time listener for User Categories & Subcategories
+                // 3. Real-time listener for User Categories & Subcategories
                 this.db.collection('users').doc(uid).collection('settings').doc('categories').onSnapshot((doc) => {
                     if (doc.exists && doc.data().data) {
                         try {
@@ -1014,6 +1223,8 @@
 
             /* --- NAVIGATION --- */
             switchView(viewName) {
+                this.applyTheme(this.currentThemeKey);
+                this.applyDarkMode(this.isDarkMode);
                 const views = ['dashboard', 'transactions', 'scan', 'settings'];
                 views.forEach(v => {
                     const sec = document.getElementById(`view-${v}`);
@@ -1030,8 +1241,14 @@
                 const activeDeskNav = document.getElementById(`desktop-nav-${viewName}`);
 
                 if (activeSec) activeSec.classList.remove('hidden');
-                if (activeMobileNav) activeMobileNav.className = "flex flex-col items-center py-1 px-3 text-indigo-600 transition font-bold";
-                if (activeDeskNav) activeDeskNav.className = "w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition bg-white/10 text-white shadow-sm";
+                if (activeMobileNav) {
+                    activeMobileNav.className = "flex flex-col items-center py-1 px-3 transition font-bold";
+                    activeMobileNav.style.color = 'var(--theme-primary)';
+                }
+                if (activeDeskNav) {
+                    activeDeskNav.className = "w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition text-white shadow-sm";
+                    activeDeskNav.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
+                }
 
                 if (viewName === 'dashboard') {
                     this.render();
@@ -1107,7 +1324,7 @@
                         const card = document.createElement('div');
                         card.className = "bg-slate-50 p-3 rounded-2xl border border-slate-100 flex justify-between items-center";
                         const subText = item.subcategory ? ` • <span class="font-semibold text-slate-600">${item.subcategory}</span>` : '';
-                        const refText = item.reference ? `<p class="text-[10px] text-indigo-600 font-medium mt-0.5">Ref: ${item.reference}</p>` : '';
+                        const refText = item.reference ? `<p class="text-[10px] font-medium mt-0.5" style="color: var(--theme-primary);">Ref: ${item.reference}</p>` : '';
                         card.innerHTML = `
                             <div>
                                 <p class="text-xs font-bold text-slate-800">${item.vendor}</p>
@@ -1118,7 +1335,7 @@
                                 <span class="text-xs font-extrabold ${isIncome ? 'text-emerald-600' : 'text-slate-800'}">
                                     ${isIncome ? '+' : '-'}${this.formatCurrency(item.amount)}
                                 </span>
-                                <button onclick="window.app.openModal('${item.id}'); window.app.closeCategoryDrilldown();" class="p-1 text-slate-400 hover:text-indigo-600">
+                                <button onclick="window.app.openModal('${item.id}'); window.app.closeCategoryDrilldown();" class="p-1 text-slate-400 hover:opacity-80" style="color: var(--theme-primary);">
                                     <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
                                 </button>
                             </div>
@@ -1170,7 +1387,7 @@
                                 <span class="text-xs font-bold text-slate-800">${cat}</span>
                             </div>
                             <div class="flex items-center gap-2">
-                                <button onclick="window.app.openEditCategoryModal('${cat}')" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold">Edit</button>
+                                <button onclick="window.app.openEditCategoryModal('${cat}')" class="text-xs font-semibold hover:opacity-80" style="color: var(--theme-primary);">Edit</button>
                                 <button onclick="window.app.deleteCategory('${cat}')" class="text-xs text-red-500 hover:text-red-700 font-semibold">Delete</button>
                             </div>
                         </div>
@@ -1324,6 +1541,7 @@
             }
 
             render() {
+                this.applyTheme(this.currentThemeKey);
                 this.renderCategoryDropdowns();
                 const { expenses, income, net } = this.calculateTotals();
 
@@ -1703,12 +1921,12 @@
                         
                         const thirtyMinutesAgo = Date.now() - (30 * 60 * 1000);
                         const isRecent = item.updatedAt && item.updatedAt > thirtyMinutesAgo;
-                        const recentBadgeHtml = isRecent ? `<span class="bg-indigo-100 text-indigo-700 text-[9px] font-extrabold px-2 py-0.5 rounded-full border border-indigo-200 animate-pulse">Recent</span>` : '';
+                        const recentBadgeHtml = isRecent ? `<span class="bg-indigo-100 text-[9px] font-extrabold px-2 py-0.5 rounded-full border border-indigo-200 animate-pulse" style="color: var(--theme-primary);">Recent</span>` : '';
 
                         const card = document.createElement('div');
                         card.className = "bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center";
                         const subText = item.subcategory ? ` (${item.subcategory})` : '';
-                        const refText = item.reference ? `<p class="text-[10px] text-indigo-600 font-medium mt-0.5">Ref: ${item.reference}</p>` : '';
+                        const refText = item.reference ? `<p class="text-[10px] font-medium mt-0.5" style="color: var(--theme-primary);">Ref: ${item.reference}</p>` : '';
                         
                         card.innerHTML = `
                             <div class="flex items-center space-x-3">
@@ -1729,7 +1947,7 @@
                                     ${isIncome ? '+' : '-'}${this.formatCurrency(item.amount)}
                                 </span>
                                 <div class="flex space-x-1">
-                                    <button type="button" onclick="window.app.openModal('${item.id}')" class="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-slate-50 transition">
+                                    <button type="button" onclick="window.app.openModal('${item.id}')" class="p-1.5 text-slate-400 hover:opacity-85 rounded-lg hover:bg-slate-50 transition" style="color: var(--theme-primary);">
                                         <i data-lucide="pencil" class="w-4 h-4"></i>
                                     </button>
                                     <button type="button" onclick="window.app.deleteTransaction('${item.id}')" class="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-slate-50 transition">
@@ -1745,7 +1963,7 @@
                 lucide.createIcons();
             }
 
-            /* --- OCR STATEMENT & TNG / RHB PARSER --- */
+            /* --- OCR STATEMENT & RESTORED RHB / TNG PARSER --- */
             async handleFileUpload(event) {
                 const files = event.target.files;
                 if (!files || files.length === 0) return;
@@ -1881,7 +2099,7 @@
                 const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
                 let currentDate = new Date().toISOString().split('T')[0];
 
-                // 1. TNG "Transfer to wallet" screenshot check
+                // 1. Strict TNG "Transfer to wallet" screenshot rule
                 if (/transfer\s*to\s*wallet/i.test(text)) {
                     const amountMatch = text.match(/(?:-\s*RM|\bRM\b)\s*([\d\.,]+)/i);
                     const amount = amountMatch ? parseFloat(amountMatch[1].replace(',', '')) : 0.00;
@@ -1908,7 +2126,7 @@
                     }
                 }
 
-                // 2. RHB & General Multi-row Bank Statement Parser
+                // 2. Restored RHB & General Multi-row Bank Statement Parser
                 lines.forEach(line => {
                     const headerDate = line.match(/(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)?,?\s*(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})/i);
                     if (headerDate) {
