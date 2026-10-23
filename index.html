@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Smart Expense Tracker PWA [v3.4 Profile Picture & Cloud Sync]</title>
+    <title>Smart Expense Tracker PWA [v3.6 PWA Theme Enforcement]</title>
     <!-- PWA Manifest & Theme Color -->
     <meta name="theme-color" content="#4f46e5">
     <meta name="description" content="Secure Multi-User Expense Tracker PWA with Profile Picture, Theme Switcher, Real-Time Cloud Sync & OCR">
@@ -52,13 +52,15 @@
             --theme-sidebar: #1e1b4b;
         }
 
-        /* Light / Dark Mode Override Variables */
+        /* Enforce PWA Light / Dark mode classes, ignoring browser system preference */
         body.theme-light {
-            background-color: #f8fafc;
-            color: #1e293b;
+            background-color: #f8fafc !important;
+            color: #1e293b !important;
         }
         body.theme-light .app-card, 
-        body.theme-light .bg-white {
+        body.theme-light .bg-white,
+        body.theme-light header,
+        body.theme-light nav.bg-white {
             background-color: #ffffff !important;
             color: #1e293b !important;
             border-color: #e2e8f0 !important;
@@ -73,10 +75,14 @@
             color: #0f172a !important;
             border-color: #cbd5e1 !important;
         }
+        body.theme-light .bg-slate-50 { background-color: #f8fafc !important; }
+        body.theme-light .bg-slate-100 { background-color: #f1f5f9 !important; color: #1e293b !important; }
+        body.theme-light .border-slate-100, 
+        body.theme-light .border-slate-200 { border-color: #e2e8f0 !important; }
 
         body.theme-dark {
-            background-color: #0f172a;
-            color: #f1f5f9;
+            background-color: #0f172a !important;
+            color: #f1f5f9 !important;
         }
         body.theme-dark .app-card, 
         body.theme-dark .bg-white,
@@ -97,7 +103,7 @@
             border-color: #475569 !important;
         }
         body.theme-dark .bg-slate-50 { background-color: #0f172a !important; }
-        body.theme-dark .bg-slate-100 { background-color: #334155 !important; color: #f1f5f9 !important; }
+        body.theme-dark .bg-slate-100 { background-color: #1e293b !important; color: #f1f5f9 !important; }
         body.theme-dark .border-slate-100, 
         body.theme-dark .border-slate-200 { border-color: #334155 !important; }
     </style>
@@ -482,7 +488,7 @@
                                         <i data-lucide="palette" class="w-4 h-4" style="color: var(--theme-primary);"></i>
                                         UI Color Theme & Mode
                                     </p>
-                                    <p class="text-xs text-slate-400">Customize appearance and switch between light and dark mode</p>
+                                    <p class="text-xs text-slate-400">Customize appearance and PWA Light / Dark mode</p>
                                 </div>
                             </div>
                             
@@ -506,66 +512,47 @@
                                 <button onclick="window.app.setAppTheme('sunset')" id="theme-btn-sunset" class="p-2.5 rounded-2xl border text-xs font-bold flex items-center gap-2 transition hover:bg-slate-50">
                                     <span class="w-4 h-4 rounded-full bg-amber-600"></span> Sunset
                                 </button>
-                                <button onclick="window.app.setAppTheme('slate')" id="theme-btn-slate" class="p-2.5 rounded-2xl border text-xs font-bold flex items-center gap-2 transition hover:bg-slate-50">
-                                    <span class="w-4 h-4 rounded-full bg-slate-800"></span> Slate
+                                <button onclick="window.app.setAppTheme('blossom')" id="theme-btn-blossom" class="p-2.5 rounded-2xl border text-xs font-bold flex items-center gap-2 transition hover:bg-slate-50">
+                                    <span class="w-4 h-4 rounded-full bg-pink-600"></span> Blossom
                                 </button>
                             </div>
                         </div>
 
-                        <!-- Real-Time Cloud Sync Status Card -->
-                        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                            <div>
-                                <p class="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
-                                    <i data-lucide="cloud" class="w-4 h-4" style="color: var(--theme-primary);"></i>
-                                    Cloud Real-Time Sync
-                                </p>
-                                <p class="text-xs text-slate-400">Connected & Secured to Firebase Cloud (<span class="font-mono text-indigo-600">personal-use-385b5</span>)</p>
+                        <!-- Categories & Security -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                            <div class="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                                <div>
+                                    <p class="text-xs font-bold text-slate-800">Categories</p>
+                                    <p class="text-[11px] text-slate-400">Manage tags & subcategories</p>
+                                </div>
+                                <button onclick="window.app.openCategoryManager()" class="text-xs font-semibold px-3 py-1.5 rounded-xl text-white theme-btn" style="background-color: var(--theme-primary);">Manage</button>
                             </div>
-                            <span class="text-[10px] font-bold bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full border border-emerald-200 flex items-center gap-1">
-                                <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Active
-                            </span>
+                            <div id="mobile-pin-setting-card" class="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                                <div>
+                                    <p class="text-xs font-bold text-slate-800">Screen Lock PIN</p>
+                                    <p class="text-[11px] text-slate-400">Mobile privacy passcode</p>
+                                </div>
+                                <button onclick="window.app.openResetPinModal()" class="text-xs font-semibold px-3 py-1.5 rounded-xl bg-slate-200 text-slate-700 hover:bg-slate-300">Reset</button>
+                            </div>
                         </div>
 
-                        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                            <div>
-                                <p class="text-sm font-semibold">Categories & Subcategories</p>
-                                <p class="text-xs text-slate-400">Add, rename or delete spending tags</p>
-                            </div>
-                            <button onclick="window.app.openCategoryManager()" class="text-xs bg-indigo-50 hover:bg-indigo-100 font-semibold px-3 py-1.5 rounded-lg border border-indigo-100" style="color: var(--theme-primary);">Manage</button>
-                        </div>
-
-                        <!-- Mobile-Only Screen Lock PIN Setting -->
-                        <div id="mobile-pin-setting-row" class="flex items-center justify-between pb-3 border-b border-slate-100 sm:hidden">
-                            <div>
-                                <p class="text-sm font-semibold">Change Security PIN</p>
-                                <p class="text-xs text-slate-400">Update your 4-digit mobile screen lock passcode</p>
-                            </div>
-                            <button onclick="window.app.openResetPinModal()" class="text-xs bg-slate-100 hover:bg-slate-200 font-medium px-3 py-1.5 rounded-lg border border-slate-200">Reset PIN</button>
-                        </div>
-
-                        <div>
-                            <p class="text-sm font-semibold">Export & Restore Backup</p>
-                            <p class="text-xs text-slate-400 mb-2.5">Export spreadsheet backup or restore previous CSV ledger</p>
+                        <!-- Backup & Erase Data -->
+                        <div class="pt-2 space-y-2">
+                            <p class="text-xs font-bold text-slate-700 uppercase tracking-wider">Data & Backup</p>
                             <div class="grid grid-cols-2 gap-2">
-                                <button onclick="window.app.exportToCsv()" class="py-2.5 bg-emerald-600 text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 hover:bg-emerald-700 transition shadow-sm">
+                                <button onclick="window.app.exportToCsv()" class="py-2.5 bg-emerald-600 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 hover:bg-emerald-700 transition shadow-sm">
                                     <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Export CSV
                                 </button>
-                                <label class="cursor-pointer text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 hover:opacity-90 transition shadow-sm" style="background-color: var(--theme-primary);">
+                                <label class="cursor-pointer py-2.5 bg-indigo-600 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 hover:opacity-90 transition shadow-sm" style="background-color: var(--theme-primary);">
                                     <i data-lucide="file-input" class="w-4 h-4"></i> Import CSV
                                     <input type="file" accept=".csv" class="hidden" onchange="window.app.importFromCsv(event)">
                                 </label>
                             </div>
-                        </div>
-
-                        <hr class="border-slate-100">
-
-                        <div>
-                            <p class="text-sm font-semibold text-red-600">Clear All Ledger Data</p>
-                            <p class="text-xs text-slate-400 mb-2">Permanently erase all expenses recorded on your account</p>
-                            <button onclick="window.app.openClearDataModal()" class="w-full py-2.5 bg-red-50 text-red-600 border border-red-200 text-xs font-semibold rounded-xl flex items-center justify-center gap-2 hover:bg-red-100 transition">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i> Erase All Expenses
+                            <button onclick="window.app.openClearDataModal()" class="w-full py-2.5 bg-rose-50 text-rose-600 border border-rose-200 text-xs font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-rose-100 transition mt-2">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i> Erase All Ledger Records
                             </button>
                         </div>
+
                     </div>
                 </section>
             </main>
@@ -790,7 +777,7 @@
             indigo: { name: 'Indigo Classic', primary: '#4f46e5', dark: '#4338ca', gradFrom: '#4f46e5', gradTo: '#312e81', sidebar: '#1e1b4b' },
             emerald: { name: 'Emerald Green', primary: '#059669', dark: '#047857', gradFrom: '#059669', gradTo: '#064e3b', sidebar: '#022c22' },
             sunset: { name: 'Sunset Amber', primary: '#d97706', dark: '#b45309', gradFrom: '#d97706', gradTo: '#78350f', sidebar: '#451a03' },
-            slate: { name: 'Dark Slate', primary: '#334155', dark: '#1e293b', gradFrom: '#334155', gradTo: '#0f172a', sidebar: '#090d16' }
+            blossom: { name: 'Pink Blossom', primary: '#db2777', dark: '#be185d', gradFrom: '#db2777', gradTo: '#831843', sidebar: '#500724' }
         };
 
         const SECURE_FIREBASE_CONFIG = {
@@ -854,7 +841,6 @@
             }
 
             onAuthEmailInput(email) {
-                // If user types an email, we could look up cached local avatar for that email if desired, or rely on global saved avatar
                 this.updateLoginAvatarDisplay(this.userProfilePicture);
             }
 
@@ -872,7 +858,6 @@
                     icon.classList.remove('hidden');
                 }
 
-                // Also update desktop sidebar avatar if present
                 const sideImg = document.getElementById('desktop-sidebar-avatar');
                 const sideIcon = document.getElementById('desktop-sidebar-default-icon');
                 const settingsImg = document.getElementById('settings-avatar-img');
@@ -908,7 +893,6 @@
 
                 if (!file) return;
 
-                // Validate < 5MB file size limit
                 if (file.size > 5 * 1024 * 1024) {
                     if (errBox) {
                         errBox.textContent = "Profile picture must be less than 5MB.";
@@ -1016,7 +1000,7 @@
                 root.style.setProperty('--theme-bg-gradient-to', t.gradTo);
                 root.style.setProperty('--theme-sidebar', t.sidebar);
 
-                ['indigo', 'emerald', 'sunset', 'slate'].forEach(k => {
+                ['indigo', 'emerald', 'sunset', 'blossom'].forEach(k => {
                     const btn = document.getElementById(`theme-btn-${k}`);
                     if (btn) {
                         if (k === themeKey) {
@@ -1076,7 +1060,6 @@
                 if (!this.currentUser) return;
                 const uid = this.currentUser.uid;
 
-                // 1. Real-time listener for User Preferences (Theme, Dark Mode, Avatar)
                 this.db.collection('users').doc(uid).collection('settings').doc('preferences').onSnapshot((doc) => {
                     if (doc.exists) {
                         const data = doc.data();
@@ -1100,7 +1083,6 @@
                     console.error("Cloud preferences sync error:", err);
                 });
 
-                // 2. Real-time listener for User Expenses with timestamp reconciliation
                 this.db.collection('users').doc(uid).collection('expenses').onSnapshot((snapshot) => {
                     const cloudMap = new Map();
                     this.transactions.forEach(t => cloudMap.set(String(t.id), t));
@@ -1129,7 +1111,6 @@
                     console.error("Cloud expense sync error:", err);
                 });
 
-                // 3. Real-time listener for User Categories & Subcategories
                 this.db.collection('users').doc(uid).collection('settings').doc('categories').onSnapshot((doc) => {
                     if (doc.exists && doc.data().data) {
                         try {
@@ -1152,7 +1133,11 @@
 
             /* --- SECURITY & PIN METHODS (MOBILE ONLY) --- */
             initSecurity() {
-                if (window.innerWidth >= 768) return; // Desktop bypasses PIN lock entirely
+                if (window.innerWidth >= 768) {
+                    const pinCard = document.getElementById('mobile-pin-setting-card');
+                    if (pinCard) pinCard.classList.add('hidden');
+                    return; // Desktop bypasses PIN lock entirely
+                }
                 const pinScreen = document.getElementById('pin-screen');
                 const forgotBtn = document.getElementById('forgot-pin-btn');
 
@@ -2169,7 +2154,6 @@
                 const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
                 let currentDate = new Date().toISOString().split('T')[0];
 
-                // 1. Strict TNG "Transfer to wallet" screenshot rule
                 if (/transfer\s*to\s*wallet/i.test(text)) {
                     const amountMatch = text.match(/(?:-\s*RM|\bRM\b)\s*([\d\.,]+)/i);
                     const amount = amountMatch ? parseFloat(amountMatch[1].replace(',', '')) : 0.00;
@@ -2196,7 +2180,6 @@
                     }
                 }
 
-                // 2. Restored RHB & General Multi-row Bank Statement Parser
                 lines.forEach(line => {
                     const headerDate = line.match(/(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)?,?\s*(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})/i);
                     if (headerDate) {
